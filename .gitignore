@@ -1,0 +1,23 @@
+# Ignore files and lockfiles — none of this is source.
+node_modules/
+dist/
+build/
+out/
+coverage/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Local agent config. Skills and instruction files are committed deliberately
+# (they are part of how this repo dogfoods the list), but per-user overrides
+# and session state are not.
+CLAUDE.local.md
+.agents/state/

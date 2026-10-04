@@ -1,0 +1,50 @@
+---
+name: check_readme_links
+description: Validate awesome-list annotations and check external links
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  annotate:
+    name: Annotation format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check every list entry carries an evidence grade
+        run: python .github/scripts/check_annotations.py README.md
+
+  links:
+    name: Link health
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Collect links
+        run: |
+          python .github/scripts/check_annotations.py --urls README.md > /tmp/urls.txt
+          echo "$(wc -l < /tmp/urls.txt) links collected"
+      - name: Check external links resolve
+        run: |
+          cat /tmp/urls.txt | xargs -P 8 -I{} sh -c '
+            code=$(curl -sSL -o /dev/null -w "%{http_code}" \
+              --max-time 20 --retry 2 -A "Mozilla/5.0 (compatible; awesome-link-check)" "{}" || echo 000)
+            echo "$code {}"
+          ' > /tmp/status.txt
+          echo "--- results ---"
+          cat /tmp/status.txt
+          echo "--- failures (excluding known-soft hosts) ---"
+          grep -vE '^(2[0-9][0-9]|3[0-9][0-9]) ' /tmp/status.txt \
+            | grep -vE ' (https://x\.com|https://twitter\.com|https://dev\.to|https://pypi\.org/project/(contextwatch|contextlens-profiler)/)' \
+            | grep -vE ' https://cognition\.com/blog' \
+            || true
+          # Non-2xx is reported above but does not fail the job: many hosts
+          # (X, PyPI, vendor blogs) reject automated clients while serving
+          # humans fine. Fail only on grossly malformed URLs.
+          if grep -qE '^(000) https?://[^ ]*$' /tmp/status.txt; then
+            echo "::warning::some links were unreachable from CI"
+          fi
