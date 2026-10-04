@@ -17,6 +17,7 @@ the first. The bill for the third is the one nobody has instrumented.
 - [Leg 0 — Measure](#leg-0--measure)
 - [Leg 1 — Input](#leg-1--input)
   - [🕸️ Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) — 879 tokens vs 331,375 on the same corpus, and four ways out
+  - [💾 Cache](#%F0%9F%92%BE-cache) — four different mechanisms; deletion and caching are the same lever pointed opposite ways
 - [Leg 2 — Output](#leg-2--output)
 - [Leg 3 — Lifetime](#leg-3--lifetime)
 - [Serve-side](#serve-side-cost-and-latency-not-token-count)
@@ -291,14 +292,65 @@ pipes.
 
 Cheapest input tokens are the ones you don't re-send.
 
+But "caching" names **four different mechanisms** on different clocks, and
+conflating them is how teams ship a cache that saves nothing. Sort them first:
+
+| Mechanism | What it reuses | Saves | Breaks when |
+|---|---|---|---|
+| **Prefix caching** | identical prompt prefix, provider-side | input $ + TTFT | anything in the prefix changes |
+| **Server-side context editing** | *nothing* — it deletes | tokens now | **it invalidates the prefix cache** |
+| **KV precompute / CAG** | computed KV states, offline | prefill compute, TTFT | model or corpus changes |
+| **Semantic / response caching** | whole answers by similarity | everything | nothing, but it's a different system |
+
+Rows 1 and 2 point opposite ways. That tension is the most important thing in
+this section, and [CAPC](https://arxiv.org/html/2607.15516v1) shows the same
+collision arriving from the compression side.
+
+#### 🏷️ Prefix caching (provider-side)
+
 - **[Anthropic: prompt caching](https://claude.com/blog/prompt-caching)** — write costs 1.25× base input, reads cost 0.1×. Up to −90% cost, −85% latency on long prompts. `[measured]`
-- **[Don't Break the Cache](https://arxiv.org/html/2601.06007v1)** — across OpenAI/Anthropic/Google: 45–80% cost, 13–31% TTFT. Also the part everyone gets wrong: **what invalidates a prefix** (timestamps in the system prompt, tool-definition changes, mid-session model switches). `[measured]`
-- **[CAPC: cache-aware prompt compression](https://arxiv.org/html/2607.15516v1)** — the first honest cost model of compress × cache interaction. `[measured]`
+- **[Don't Break the Cache](https://arxiv.org/html/2601.06007v1)** — across OpenAI/Anthropic/Google: **45–80% cost, 13–31% TTFT**. Cache-safe strategies beat naive full-context caching, and cost savings scale with prefix length (10–45% at 500 tokens → 54–89% at 50,000). Also the part everyone gets wrong: **what invalidates a prefix** — a timestamp or request ID in the system prompt, tool-definition changes, mid-session model switches, toggling thinking parameters. `[measured]`
+- **[Gemini context caching](https://ai.google.dev/gemini-api/docs/generate-content/caching)** — implicit (automatic on 2.5+, **no savings guarantee**) vs explicit (**guaranteed** 90% discount, TTL defaults to 1 hour). Minimums vary by model: 2,048 tokens on Gemini 2.5, 4,096 on the Gemini 3 family, 6,144 for some 3.x Flash. Two sharp edges: explicit caching bills **storage per hour per million tokens**, so a cache you never re-read is a pure loss; and the Interactions API supports implicit only. `[measured]`
+- **[Vertex AI context caching](https://cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview)** — 90% discount; implicit has **no cache-write surcharge** (tokens written are charged at standard input). Caches deleted within 24h, retention based on load and reuse frequency. `[measured]`
+- **[Gemini CLI token caching](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/token-caching.md)** — ⚠️ **caching requires API-key or Vertex auth. OAuth users get none**, because the Code Assist API doesn't support cached-content creation. If your team authenticates with a Google account you have no cache, and nothing in the product tells you. `/stats` shows the split. `[measured]`
 
 **Rules that matter more than the features:**
 1. Stable content first (system prompt → tool definitions → history), variable last.
 2. Keep the prefix byte-identical between turns. A request ID in the system prompt kills every subsequent hit.
 3. Cache operates on ~1k-token blocks. A 300-token prompt has nothing to reuse.
+4. **Measure the hit rate, not the cache size.** It's the only number that says whether any of this works — `cachedContentTokenCount` / `usage_metadata.cached_tokens` on Gemini, `usage.cache_read_input_tokens` on Anthropic. OpenHands treats it as its **top-level metric**, and the reason is the price: cached $0.30 vs uncached $3.20 per MTok, roughly 10×. `[self-reported]`
+
+#### 🗑️ Server-side context editing
+
+Deletion, done by the provider. Strong numbers — and it invalidates the cache.
+
+- **[Anthropic: managing context on the Claude Developer Platform](https://claude.com/blog/context-management)** — the measured case: **context editing alone +29%** agentic-search performance over baseline; **memory tool + context editing +39%**; and on a **100-turn web search eval, −84% token consumption** while completing workflows that would otherwise fail on context exhaustion. `[measured]`
+- **[Context editing API](https://platform.claude.com/docs/en/build-with-claude/context-editing)** — beta header `context-management-2025-06-27`; strategies `clear_tool_uses_20250919` and `clear_thinking_20251015`. Tunable `trigger` (default 100k input tokens), `keep`, `exclude_tools`, `clear_tool_inputs`. `[measured]`
+  ⚠️ **Three documented sharp edges, worth reading before enabling:**
+  - *"Tool clearing will invalidate your cache if your prefixes contain your tools."*
+  - Thinking blocks: **kept** → cache preserved; **cleared** → cache invalidated at that point. You are choosing between window space and cache hits, explicitly.
+  - For accounts created **on or after 2026-08-31**, replaying an invalidated block is **rejected** unless you opt into dropping it.
+- **[Anthropic memory tool](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-tool-use.html)** — Claude reads and writes a developer-owned local directory, so durable state lives *outside* the window instead of inside it. The same move as structured note-taking, with the storage backend under your control. `[measured]`
+- **[LangChain `ClearToolUsesEdit`](https://reference.langchain.com/python/langchain/agents/middleware/context_editing/ClearToolUsesEdit)** — model-agnostic port, with triggers in tokens, messages, or **fraction of the model's window** (`{fraction: 0.8}`). Note `clear_at_least`: the API ships a knob whose documented purpose is "determining whether context clearing is worth breaking your prompt cache for." The tradeoff is a first-class parameter. `[self-reported]`
+- **[langchain #37815](https://github.com/langchain-ai/langchain/issues/37815)** — ⚠️ `ClearToolUsesEdit` **fires every turn** when a checkpointer is present: edits run on a `deepcopy`, so the `cleared` flag never persists back to state. The edit re-applies forever, and `token_count_method="model"` keeps paying for token counts on unchanged state. A deletion feature that silently costs money on every request. `[negative]`
+- **[LiteLLM context management polyfill](https://docs.litellm.ai/docs/claude_code_context_management)** — applies `clear_tool_uses` in-gateway for any non-Anthropic provider, so you write the loop once. (`clear_thinking` listed as coming soon.) `[self-reported]`
+
+> **The shape to notice:** clearing tool results and keeping them are both
+> defensible, and which wins depends on your cache hit rate — not your token
+> count. Deletion moves cost from every-turn to once-per-invalidation. If you
+> can't see your hit rate, you can't tell whether you're saving or spending,
+> which is why rule 4 comes before the rest.
+
+#### ⚡ Precomputed KV caches (CAG)
+
+Move the prefill cost offline. Correct when knowledge is stable and small enough
+to hold. A real architecture, not a micro-optimization.
+
+- **[Don't Do RAG: When CAG Is All You Need (WWW 2025)](https://arxiv.org/html/2412.15605v1)** · `HotpotQA generation time: 0.85s vs 9.25s (small), 1.66s vs 28.8s (medium)` · `[measured]`
+  Precompute `KV-Encode(D)` offline once, then answer queries against the cached states — no retrieval at query time, and no chance of retrieving the wrong chunk. Accuracy *exceeds* sparse/dense RAG on several settings (0.7696 vs 0.6652). Cache reset is a truncate of appended query tokens, not a reload from disk.
+- **[TurboRAG](https://arxiv.org/pdf/2410.07590)** — the same idea per *document*: precompute each chunk's KV offline, retrieve cached KV directly for prefill. Removes the repeated recompute that dominates RAG TTFT, since KV cost is quadratic in sequence length. Costs a CPU→GPU transfer; independent attention plus reordered positions costs ~4–6% accuracy until fine-tuned, then <1%. `[measured]`
+- **[ACC — adaptive contextual compression for CAG](https://arxiv.org/html/2505.08261v1)** — **−45% context window occupancy**, sub-700ms inference, +5–10% BERTScore over sparse/dense RAG. The hybrid CAG-RAG variant adds 1–2 BERTScore points for 5–10% latency. `[measured]`
+  ⚠️ **And the cost side CAG marketing omits:** on HotpotQA, standard CAG needs **18,000MB** against sparse RAG's 12,000MB — the *most* memory of any arm tested. Compressed CAG (ACC) brings that to 13,000MB. Preloading trades per-query cost for resident memory, permanently.
 
 ### 🗑️ Delete (narrow)
 
@@ -489,6 +541,7 @@ the reason this list is worth reading rather than skimming.
 | Pull | Toward | Why they fight |
 |---|---|---|
 | Compress input | ↔ Cache input | Compression rewrites the prefix → every call is a cache miss. Naive compression can be **net negative**. [CAPC](https://arxiv.org/html/2607.15516v1) models it; the fix is cache-aware compression, not "compress less." |
+| **Delete context** | ↔ **Cache the prefix** | **Same collision, arrived at from the other side.** Anthropic: *"tool clearing will invalidate your cache if your prefixes contain your tools."* Thinking-block clearing: kept → cache preserved, cleared → cache invalidated at that point. Context editing still wins overall (**+29% performance, −84% tokens** on a 100-turn eval) — but you are choosing a regime, not adding an optimization. `clear_at_least` exists as a knob precisely because the tradeoff isn't free. |
 | Shorter reasoning | ↔ Math accuracy | CCoT −27.69% on math (GPT-3.5); short reasoning hurt small and medium models too. Model- and task-dependent, not universal. |
 | Tighter budgets | ↔ Budget compliance | 10-token budget → **157** output tokens, worse than a 50-token budget. Non-monotonic. |
 | Enable thinking everywhere | ↔ Invisible bill | 7.2× cost, identical visible response, no dashboard line item. |
@@ -517,28 +570,30 @@ the reason this list is worth reading rather than skimming.
 2. The cheapest token is the one you never send.
 3. Identifiers beat payloads. A file path is ~12 tokens; the file is 4,000.
 4. Every tool schema is a permanent tax on every turn.
-5. Compress and cache are antagonistic. Pick a regime deliberately.
+5. Compress and cache are antagonistic. **So are delete and cache.** Pick a regime deliberately, and instrument it.
 6. Advertised context ≠ effective context. Benchmark yours.
+7. **Cache hit rate is the primary metric, not cache size.** Nothing here is verifiable without it, and at ~10× the price difference it is the largest single lever on the input bill.
+8. **Deletion and caching are the same lever pointed opposite ways.** Clearing tool results trades every-turn cost for once-per-invalidation cost. Decide with the hit rate in front of you, never with the token count.
 
 **Output**
 
-7. Output tokens are 5× the price. Treat them as the scarce resource.
-8. **Reasoning tokens are output tokens. Instrument them, or they're free money for your provider.**
-9. A budget you can't meet isn't a budget — it's a suggestion the model overpays on.
-10. Prefer a schema to a paragraph; a tool call to a sentence.
-11. Ask for the smallest thing that answers the question. Then check that it did.
-12. A diff is not a rewrite. Edit protocols are a token decision.
-13. Verbosity is trainable, which means brevity is sometimes an artifact, not a fact. Measure per model.
-14. Token count, latency, and dollars are three different numbers. Know which one you reduced.
+9. Output tokens are 5× the price. Treat them as the scarce resource.
+10. **Reasoning tokens are output tokens. Instrument them, or they're free money for your provider.**
+11. A budget you can't meet isn't a budget — it's a suggestion the model overpays on.
+12. Prefer a schema to a paragraph; a tool call to a sentence.
+13. Ask for the smallest thing that answers the question. Then check that it did.
+14. A diff is not a rewrite. Edit protocols are a token decision.
+15. Verbosity is trainable, which means brevity is sometimes an artifact, not a fact. Measure per model.
+16. Token count, latency, and dollars are three different numbers. Know which one you reduced.
 
 **Lifetime**
 
-15. **You emit context, you don't just spend it.** Review artifact cost like API cost.
-16. **An open-ended cleanup goal will be undershot. Bound it** — name the target and the guard metric.
-17. **A deletion without a retention bar is a regression with extra steps.** State what each thing independently protects before removing it.
-18. **Never convert uncertain candidates into cleanup to hit a number.** This applies to PRs and to ledger entries alike.
-19. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
-20. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
+17. **You emit context, you don't just spend it.** Review artifact cost like API cost.
+18. **An open-ended cleanup goal will be undershot. Bound it** — name the target and the guard metric.
+19. **A deletion without a retention bar is a regression with extra steps.** State what each thing independently protects before removing it.
+20. **Never convert uncertain candidates into cleanup to hit a number.** This applies to PRs and to ledger entries alike.
+21. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
+22. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
 
 ---
 
@@ -621,6 +676,20 @@ Real gaps. Nobody has measured these.
    Nobody has cleanly separated "structure helps retrieval" from "LLM-written
    structure is expensive," which is why the token column and the relevance
    column disagree so consistently across the [table above](#%F0%9F%95%B8%EF%B8%8F-graph-engineering).
+10. **Where is the delete↔cache crossover?** Context editing wins on tokens *and*
+    performance in Anthropic's own eval, but clearing invalidates the prefix — and
+    nobody has published hit rate *before and after* enabling it. Without that
+    pair of numbers, "should we turn on context editing?" has no evidence-based
+    answer outside one vendor's internal benchmark.
+11. **Is there a hit rate above which preloading always wins?** CAG is ~10–17×
+    faster at query time but needs *more* resident memory (18GB vs 12GB on
+    HotpotQA) and a corpus stable enough to precompute. Break-even depends on
+    query volume, corpus churn, and hit rate simultaneously — three variables, no
+    published curve.
+12. **Semantic caching is deliberately absent.** It saves more than any mechanism
+    in this list and it is the one most likely to return a confidently wrong
+    answer. Omitted rather than uncritically included; somebody should measure its
+    false-hit rate.
 
 ---
 
@@ -669,6 +738,24 @@ Each one names a **default that shipped unmeasured**, with a receipt.
     ([ContextRAG](https://arxiv.org/pdf/2605.19735)); LazyGraphRAG matches graph
     answer quality at **0.1% of the index cost**. If a join can produce the edge,
     an LLM shouldn't be writing it.
+15. **Assuming you have a cache.** Authentication silently decides it. Gemini
+    CLI gets context caching on API-key or Vertex auth and **none at all on
+    OAuth**, because Code Assist can't create cached content. Same model, same
+    prefix, same code — 10× the price. Check the provider's auth path before
+    budgeting a single cached token.
+16. **Long TTLs on caches nobody re-reads.** Gemini explicit caching bills
+    storage **per hour per million tokens**. A generous TTL on a corpus that
+    went stale is not a safety margin; it's a recurring bill for content you
+    stopped reading. Re-read frequency, not caution, should set the TTL.
+17. **Enabling deletion without watching the hit rate.** The reported wins are
+    real (+29% performance, −84% tokens) and the reported cost is real
+    (cache invalidation on every clear). Which one dominates *your* workload is
+    unknowable without a hit-rate metric — see [Law 7](#laws).
+18. **A deletion pass that doesn't persist its own state.**
+    [`ClearToolUsesEdit`](https://github.com/langchain-ai/langchain/issues/37815)
+    re-fires every turn against a checkpointer, re-clearing already-cleared
+    results and paying for a fresh token count each time. Deletion bugs cost
+    money in the direction people forget to check.
 
 ---
 
