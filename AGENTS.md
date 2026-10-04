@@ -31,8 +31,10 @@ python .github/scripts/check_annotations.py README.md   # must print 0 problems
 python .github/scripts/check_annotations.py --urls README.md   # link extraction
 ```
 
-The annotation check is the same gate CI runs. If it flags your entry, the fix
-is to add the missing field, not to relax the check.
+The script runs the same gate as CI and checks three things: evidence grades,
+linked entries, and internal `#anchor` targets (using GitHub's slug rules — it
+percent-encodes emoji and does *not* collapse runs of spaces). If it flags your
+entry, the fix is to add the missing field, not to relax the check.
 
 ## Editing the README
 

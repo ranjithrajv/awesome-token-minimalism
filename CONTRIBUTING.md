@@ -145,9 +145,23 @@ depends on, and they are cited as sources constantly.
 3. Link rot: if you're updating a stale entry, say what changed and when.
 4. Numbers without a stamp decay within weeks in this field. If you're
    re-checking a `measured` entry, that's a high-value PR — send it.
+5. Put the grade at the end of the entry's **first line**. A split verdict uses
+   a compound tag (`[measured]/[asserted]`). The linter only reads that line,
+   and so does anyone skimming the list.
 
-CI checks links and annotation format. If the annotation linter flags your entry,
-the fix is to add the missing field, not to disable the check.
+CI runs one script, `.github/scripts/check_annotations.py`, which checks three
+things: evidence grades, that entries are linked, and that internal `#anchor`
+targets resolve. It reproduces GitHub's slug rules rather than guessing at
+them — emoji get percent-encoded, em dashes get dropped, and **runs of spaces
+are not collapsed**, so `## Leg 1 — Input` slugs to `#leg-1--input` with two
+hyphens. Four cross-references in this file were silently broken until that
+check existed; if it flags yours, the fix is to correct the anchor, not to
+disable the check.
+
+```sh
+python .github/scripts/check_annotations.py README.md   # grades + anchors
+python .github/scripts/check_annotations.py --urls README.md   # link health
+```
 
 ## License
 

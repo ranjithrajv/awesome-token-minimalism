@@ -16,6 +16,7 @@ the first. The bill for the third is the one nobody has instrumented.
 - [Evidence grades](#evidence-grades)
 - [Leg 0 — Measure](#leg-0--measure)
 - [Leg 1 — Input](#leg-1--input)
+  - [🕸️ Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) — 879 tokens vs 331,375 on the same corpus, and four ways out
 - [Leg 2 — Output](#leg-2--output)
 - [Leg 3 — Lifetime](#leg-3--lifetime)
 - [Serve-side](#serve-side-cost-and-latency-not-token-count)
@@ -181,6 +182,81 @@ Retrieval is a **runtime** decision, not a preprocessing step. Hold identifiers
 - **[serena-slim](https://github.com/mcpslim/serena-slim)** — 29 tools → 18, schema tokens 7,348 → 1,614 (−78%). Good example of tool consolidation as a token lever. `[self-reported]`
 - **[SWE-grep (Cognition)](https://cognition.com/blog)** — RL-trained agentic retrieval for fast parallel context fetch, order of magnitude less time than frontier coding models. `[self-reported]`
 
+### 🕸️ Graph engineering
+
+A graph is a **token-efficiency choice**, not just a retrieval architecture. It
+can be the cheapest way to answer a question (structured facts beat 4k tokens of
+nearby prose) or by far the most expensive (community summarization inflates
+prompts 5–6 orders of magnitude). Both are real and both are measured.
+
+Average prompt tokens per query, same corpora:
+
+| System | Novel | Medical |
+|---|---|---|
+| Vector RAG | **879** | **954** |
+| RAPTOR | 3,441 | 3,510 |
+| fast-graphrag | 4,204 | 4,298 |
+| HippoRAG | 7,208 | 7,342 |
+| LightRAG | 100,832 | 100,310 |
+| MS-GraphRAG local | 38,707 | 39,821 |
+| MS-GraphRAG global | **331,375** | **332,881** |
+
+Two vectors beat every graph on the token column while losing on *context
+relevance* — graphs reach more relevant information and pay in redundancy.
+Global community summarization scales **with corpus size**: 7,800 → 40,000
+tokens as query difficulty rises. That is the worst token curve in this list.
+
+**The split that matters:** *which* graph system. Same paper, same corpus, 377×
+between the cheapest and dearest.
+
+- **[When to use Graphs in RAG (2025)](https://arxiv.org/html/2506.05690v3)** — the table above, plus the finding that graph pipelines "incur non-trivial token overhead" while introducing redundancy that degrades context relevance. Vector RAG wins Evidence Recall on discrete-fact questions (83.2%); GraphRAG-global wins it on multi-hop (83.1%) but loses Context Relevance (78.8% vs RAG's). `[measured]`
+- **[GraphRAG vs RAG: systematic evaluation](https://www.alphaxiv.org/abs/2502.11371)** — construction cost is "significantly more time-consuming and expensive" than vector indexing, but community-based GraphRAG can achieve *lower query latency* because summaries collapse the search space. Also the storage warning: community systems carry the largest footprint, since they keep both graph structure and every level's summaries. `[measured]`
+- **[Relation-grouped graph representation](https://arxiv.org/html/2606.25656)** — the trick worth stealing regardless of framework: collapse `entity1 -r1-> entity2`, `entity1 -r2-> entity2` into `entity1 -(r1|r2|r3)-> entity2`, taking per-entity token cost from **O(n) to O(1)** in relation count. Same knowledge, compact serialization. `[measured]`
+- **[LazyGraphRAG (Microsoft Research)](https://www.microsoft.com/en-us/research/blog/lazygraphrag-setting-a-new-standard-for-quality-and-cost)** — defers LLM use entirely: **indexing cost identical to vector RAG and 0.1% of full GraphRAG**, matching or beating answer quality at query budgets up to 1,500 relevance tests. The existence proof that graph quality does not require the expensive index. `[measured]`
+- **[Dynamic community selection (MSR)](https://www.microsoft.com/en-us/research/blog/graphrag-improving-global-search-via-dynamic-community-selection)** — the in-query fix for global search: rate communities for relevance, then traverse only the useful ones. **−77% tokens** at community level 1 (1,500 reports → 470) with comparable quality. ⚠️ At level 3 it costs **+34%** — the rating pass pulls in deeper reports. Match the technique to the level. `[measured]`
+- **[TERAG](https://arxiv.org/html/2509.18667v3)** — token-efficient graph construction by dropping LLM-written edges: **−89…97% output tokens** vs other graph-RAG methods, matching GraphRAG-level accuracy on 2Wiki (EM 51.2 vs 51.4) at a fraction of the tokens. `[measured]`
+- **[ContextRAG](https://arxiv.org/pdf/2605.19735)** — extraction-free construction via soft fuzzy join / meet operations instead of LLM-written edges. Indexes with **30 LLM calls and 22,073 tokens**; a HiRAG reproduction needed 870 calls / 3.54M tokens on a 20-task subset and failed mid-construction. **1,043× fewer indexing tokens, 188× fewer calls.** The clearest demonstration that graph structure ≠ LLM summarization. `[measured]`
+- **[RAG vs GraphRAG win rates](https://medium.com/@pankaj_pandey/microsoft-graphrag-a-breakthrough-for-global-questions-a-downgrade-for-everything-else-22b294bb3292)** — GraphRAG global is a real win on dataset-wide questions and a downgrade for everything else. `[asserted]`
+
+**Agent memory is the same trade with a different clock.** The failure mode
+shifts from query-time prompt size to *ingestion-time* cost and staleness:
+
+- **[Graph-based agent memory survey (2026)](https://arxiv.org/pdf/2602.05665v1)** — taxonomy across KG / hierarchical / temporal / hypergraph / hybrid, with the selection rule: precision and explicit multi-hop favor relational graphs; compression and abstraction favor hierarchical summaries; temporal fidelity motivates temporal graphs; cross-modal fuzzy recall favors vector or hybrid. `[measured]`
+- **[True Memory — "Storage Is Not Memory"](https://arxiv.org/html/2605.04897v1)** — the sharpest negative in this section, and it indicts the whole family. Extraction at ingestion is the wrong primitive: **content discarded before the query is known cannot be recovered at retrieval time.** Argues the extraction family (Mem0, Zep, Graphiti, Supermemory, EverMemOS) inverts the relationship — it commits content to a fixed schema at ingestion and "the representation becomes the memory." Their counter: single SQLite file, no graph store or vector index, 87.8% on LongMemEval (n=500). `[measured]`
+- **[Zep / Graphiti](https://help.getzep.com/)** — temporal Context Graph with bitemporal fact validity, so "no medication in January" and "new prescription in March" stay distinct rather than one overwriting the other. `[self-reported]`
+- **[Neo4j agent memory architecture](https://neo4j.com/labs/agent-memory/explanation/graph-architecture)** — the graph-native case: index-free adjacency gives O(1) direct lookups and O(k) 2-hop traversal where relational is O(n·log n). `[asserted]`
+
+#### Graphs with no LLM in the loop
+
+Every large number in the table above comes from LLM-written edges or community
+summaries. These three build real graphs **without an LLM in the extraction
+path** — and one of them does it at 2 billion edges. That makes the section's
+central question settled rather than open, at least for these domains.
+
+- **[GitLab Orbit](https://gitlab.com/gitlab-org/orbit/knowledge-graph)** — the strongest existence proof here. Change-data-capture into ClickHouse plus code parsed through an internal API across 11–12 languages; **500 million nodes and 2 billion edges over 40,000+ projects indexed in under 45 minutes**, event-driven so it stays current as changes ship. No LLM writes a single edge. Served to agents over MCP (Claude Code, Codex, Cursor, opencode, Gemini CLI), a Cypher-like DSL, REST, and `glab`. Agents call `get_graph_schema` / `query_graph` only when a question is better answered by traversal, and fall back otherwise. `[measured]/[asserted]` — index build is vendor-reported and checkable; the *cost* claim is asserted, because there is no published token-per-query figure.
+  **[Orbit Local](https://github.com/gitlabhq/orbit-knowledge-graph)** is the more interesting shape for this list: a **single binary** that builds a code-only call graph into **one DuckDB file**, offline, no GitLab account required. Multi-repo graphs share one database at `~/.orbit/graph.duckdb`, scoped per repository and branch.
+  ⚠️ Beta; the query DSL and ontology may change, and the hosted graph is behind a `knowledge_graph` flag. Worth noting as precedent: Duo queries against Orbit are **zero-rated and don't consume GitLab Credits**.
+- **[Logseq](https://logseq.com/)** — local-first markdown/EDN, block-level references, and an **official MCP server** (HTTP or CLI, Streamable transport) that reads and mutates the graph in place. The design detail worth stealing is operational: **batch creates and edits in one invocation** (which per the [ACL 2026 finding](#interaction-matrix) is the cost that actually matters in an agent loop), and a **`pretend` option** — "pretend add page X with y blocks" — so the agent can see how many changes a mutation causes *before* committing it. Every change stays undo/redo-able in-app. `[asserted]`
+- **[Obsidian](https://obsidian.com/)** — the graph is derived from `[[wikilinks]]`, so it is **already text on disk**: greppable, git-diffable, and free to index. No embedding step, no extraction step, nothing to pay for. `[asserted]`
+- **[obra/knowledge-graph](https://github.com/obra/knowledge-graph)** — makes that explicit and exposes it to agents: parses a vault into an untyped graph (files = nodes, wikilinks = edges) into SQLite with `sqlite-vec` + FTS5, 22MB local embedding model, 10 operations over CLI and MCP. Ships with a Claude Code plugin. Its stated design principle is this list's thesis verbatim: **"No LLM inside the tool — the agent does the reasoning, the tool provides the data infrastructure."** `[self-reported]`
+- **[obsidian-graph-mcp](https://github.com/tscolari/obsidian-graph-mcp)** — the purest form, and it answers [True Memory](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) directly: *"your hand-curated links are the graph — no entity extraction, no ontology, no embeddings required."* Unresolved links keep `dst_id NULL`, so **dangling links stay queryable**. That is exactly the recoverability case True Memory argued LLM-extracted graphs lose: nothing is extracted, so nothing can be discarded at ingestion, and a knowledge gap remains addressable later. Frontmatter properties containing wikilinks become typed edges. `[self-reported]`
+- **[logseq-graph-mcp](https://github.com/johnschieferleuhlenbrock/logseq-graph-mcp)** — local-only stdio variant, stdlib-only with no external dependencies; cache and diagnostics kept outside the graph directory, file watchers invalidate state after external edits. The careful-deployment-hygiene counterpart to the graph itself. `[self-reported]`
+
+> ⚠️ **Cost of these graphs is not zero — it's tool schemas.** Each MCP server
+> here adds 10+ tools to every turn, which is [anti-pattern #1](#anti-patterns)
+> wearing a useful hat. Load them through [progressive
+> discovery](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/docs/2026-07-28/develop/clients/client-best-practices.mdx)
+> or a [tool search](https://www.anthropic.com/engineering/advanced-tool-use)
+> layer, or subsume them behind one search-and-traverse tool. A graph that
+> answers "what connects to this?" in one call beats ten narrow tools.
+
+> **The rule this section reduces to: never pay an LLM to summarize your index
+> when a join would do.** Every large number in the table above traces back to
+> LLM-written edges or community summaries at ingestion. Both can be replaced
+> with deterministic structure — LazyGraphRAG and ContextRAG do it
+> algorithmically, GitLab Orbit does it with change-data-capture, and a
+> wikilink vault does it by hand. All four keep the graph.
+
 ### ✂️ Compress
 
 Loss-aware compression of what you send.
@@ -238,7 +314,7 @@ The narrowest sense of the word: stop paying for a tool result you already read.
 > or opt-in, and the model could not self-diagnose the loss. Deleting output that
 > a downstream system treats as durable storage is not an optimization. **Verify
 > the summary before you delete the source.** See
-> [Leg 3 retention bars](#-%EF%B8%8F-retention-bars-dont-delete-without-one).
+> [Leg 3 retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one).
 
 ---
 
@@ -350,7 +426,7 @@ Retrospective. Harder, and the highest-leverage work in this list.
 **If you just tell an agent to clean up, it will stop far too early. Give it an ambitious, measurable goal:** *"remove 20% of the least useful tests while maintaining code coverage within 2%."*
 
 This is not a quirk of that skill. It is the mirror image of the
-[budget-inversion result](#%EF%B8%8F-budget), and they are the same law:
+[budget-inversion result](#%F0%9F%93%90-budget), and they are the same law:
 
 | | Open-ended constraint | Bounded constraint |
 |---|---|---|
@@ -379,7 +455,7 @@ ordering when it is observable behavior, and regressions with credible failure
 modes. "Source inspection" counts when it fails on a contract change and survives
 an identifier-only refactor.
 
-This is also the general form of the [microcompact failure](#%EF%B8%8F-delete-narrow):
+This is also the general form of the [microcompact failure](#%F0%9F%97%91%EF%B8%8F-delete-narrow):
 deletion without a retention bar is a regression with extra steps.
 
 ---
@@ -422,9 +498,14 @@ the reason this list is worth reading rather than skimming.
 | Fewer tools | ↔ Tool accuracy | Direction of effect is *contested*: Tool Search Tool reports selection improving 49% → 74%, but the [LSP measurement study](https://arxiv.org/pdf/2608.13568) found LSP tooling **costing** +6% (Opus) to +118% (Sonnet) on symbol-localization. Different mechanisms, both can be true. |
 | **Prune the artifact** | ↔ **Future debug cost** | **Delete a guard that mattered → bug → more sessions → more lifetime context than you saved.** The lifetime axis has the *same* re-fetch trap as compression: **tokens-per-task, not tokens-per-edit.** |
 | Bounded goal | ↔ Gaming | "−20% while holding coverage within 2%" is gameable both ways: pick the easy 20%, or delete only redundant tests and stop. Needs an independent guard metric. |
+| Graph retrieval | ↔ Ingestion cost | GraphRAG-global spends **331k prompt tokens** to answer what vector RAG answers in **879**. The cost moves from the query to the index — same trade as compress ↔ cache, on a different clock. [LazyGraphRAG](https://www.microsoft.com/en-us/research/blog/lazygraphrag-setting-a-new-standard-for-quality-and-cost) exists because of this row: same graph quality, 0.1% of the index cost. |
+| Graph retrieval | ↔ Loop length | In agentic RAG the dominant cost driver is **sequential tool calls**, not retrieval volume — a 5-call session burns ~250k tokens vs 36k for a 3-call session *regardless of documents retrieved* ([ACL 2026](https://aclanthology.org/2026.gem-main.40)). Optimizing the retriever while the loop grows is optimizing the small term. |
+| Structured memory | ↔ Recoverability | Extraction at ingestion fixes a schema before the query is known; anything discarded can't be recovered later. [True Memory](https://arxiv.org/html/2605.04897v1) argues ingestion-time extraction is the wrong primitive and reports higher recall from a single SQLite file. The counter-case — graphs win multi-hop and time — is real. |
 
 > **The last two rows are where this list argues with itself.** test-audit's own
 > technique invites the failure the repo exists to catch. Flagged, not resolved.
+> The graph rows have the same shape: the cheapest representation at query time
+> can be the most expensive one to build.
 
 ---
 
@@ -457,6 +538,7 @@ the reason this list is worth reading rather than skimming.
 17. **A deletion without a retention bar is a regression with extra steps.** State what each thing independently protects before removing it.
 18. **Never convert uncertain candidates into cleanup to hit a number.** This applies to PRs and to ledger entries alike.
 19. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
+20. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
 
 ---
 
@@ -527,6 +609,18 @@ Real gaps. Nobody has measured these.
    families, or needs to be three rulesets, is unmeasured.
 7. **Does bounded-goal cleanup invite reward hacking at scale?** The 400k number
    came with a coverage guard that coverage-gaming could satisfy.
+8. **What is the break-even query volume for a graph index?** ContextRAG says it
+   is "most attractive for low- and medium-query workloads, especially when
+   corpora are re-indexed frequently" — but nobody has published the curve. You
+   would need `index_cost / (per_query_vector_saving × queries)` against corpus
+   churn, and no framework reports the first term by default. GraphRAG's own
+   indexing-cost tracking was a [user feature request](https://github.com/microsoft/graphrag/issues/1153),
+   not a default.
+9. **Is graph structure or extraction the thing that matters?** ContextRAG and
+   TERAG both drop LLM-written edges and keep the graph, with large token wins.
+   Nobody has cleanly separated "structure helps retrieval" from "LLM-written
+   structure is expensive," which is why the token column and the relevance
+   column disagree so consistently across the [table above](#%F0%9F%95%B8%EF%B8%8F-graph-engineering).
 
 ---
 
@@ -562,6 +656,19 @@ Each one names a **default that shipped unmeasured**, with a receipt.
     [Leg 3](#leg-3--lifetime) — and note that commit history is the audit trail.
 12. **Savings counters treated as evidence.** `rtk` reported 99.8% savings while
     the bill rose. Only the bill counts.
+13. **GraphRAG-global as the default answer to "we need better retrieval."**
+    **331,375 average prompt tokens** against vector RAG's 879, and it scales with
+    corpus size — 7,800 → 40,000 as query difficulty rises
+    ([arXiv 2506.05690](https://arxiv.org/html/2506.05690v3)). The capability being
+    added is answering dataset-wide questions. The cost is being paid on every
+    query, including the 90% that are single-hop lookups vector RAG handles at
+    879 tokens. Route by question type instead.
+14. **LLM-written edges and community summaries at ingestion.** The expensive
+    half of every graph pipeline. Extraction-free construction reaches comparable
+    graph quality at **1,043× fewer indexing tokens**
+    ([ContextRAG](https://arxiv.org/pdf/2605.19735)); LazyGraphRAG matches graph
+    answer quality at **0.1% of the index cost**. If a join can produce the edge,
+    an LLM shouldn't be writing it.
 
 ---
 
