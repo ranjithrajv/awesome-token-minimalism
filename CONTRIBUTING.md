@@ -3,6 +3,25 @@
 Thanks for considering a contribution. This list has one editorial rule that
 matters more than any other, and this file is mostly about it.
 
+## Two ways in
+
+| You're… | Open a PR against |
+|---|---|
+| A user, researcher, or bystander reporting what you measured | [`README.md`](README.md) — the list proper |
+| **The maintainer of a tool** that belongs here | [`SHOWCASE.md`](SHOWCASE.md) — self-submitted, grade yours to state |
+
+The showcase exists because the tools that most need listing are often ones nobody
+has heard of, and the tools everyone lists are the ones that already have a
+marketing budget. A maintainer knows the honest caveat nobody else would write down.
+
+**The distinction is structural, not editorial.** The main list is assembled by
+readers who didn't build the tool; the showcase is assembled by the authors.
+`SHOWCASE.md` says so in its header, uses the same grade vocabulary below, and
+never presents `[self-reported]` as `[measured]`. If you measure your own tool
+properly — baseline stated, method re-runnable, n and a significance test where
+you have them — put `[measured]` on the first line and expect the methodology
+reviewed like anyone else's. That's the route into the main list.
+
 ## The rule
 
 **Every entry carries an evidence grade.**

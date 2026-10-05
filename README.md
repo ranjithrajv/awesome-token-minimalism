@@ -20,6 +20,7 @@ the first. The bill for the third is the one nobody has instrumented.
 - [Glossary](GLOSSARY.md) — every load-bearing term, defined once
 - [Resources](RESOURCES.md) — external frameworks, essays, and analysis
 - [Token Maxxing](TOKENMAXXING.md) — the negative results, from fleet-scale bills to optimizers that cost more
+- [Showcase](SHOWCASE.md) — for maintainers: submit your own tool, with the grade stated honestly
 - [The case](#the-case) — money, time, energy, and why less bloat is *more* correct
   - [Four gains, one lever](#four-gains-one-lever) — the numbers
   - [Why one lever moves all four](#why-one-lever-moves-all-four) — the mechanism, and its escape hatch
@@ -29,6 +30,7 @@ the first. The bill for the third is the one nobody has instrumented.
   - [Where the case breaks](#where-the-case-breaks) — the exceptions, both halves
   - [The rule](#the-rule) — relevance density, not volume
 - [The three legs](#the-three-legs) — the frame everything else hangs on
+- [The measurement surface](#the-measurement-surface-in-one-line) — what you measure determines what you find
 - [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
 - [Evidence grades](#evidence-grades) — the one non-negotiable rule
 - [Leg 0 — Measure](#leg-0--measure) — you cannot cut what you cannot see
@@ -349,6 +351,35 @@ tokens are usually not broken out on any dashboard. See [Leg 2](#leg-2--output).
 
 Everything you emit becomes context that future sessions must read. The leg with
 the longest clock and the fewest tools. See [Leg 3](#leg-3--lifetime).
+
+### The measurement surface, in one line
+
+**What you measure determines what you find.** A seven-word brevity instruction
+saves 418 output tokens per task on single API calls (p=0.0001, 48 tasks) but
+only 9.58 on full agent sessions (p=0.52, 12 tasks). The measurement surface
+matters as much as the measurement.
+
+- **[Leviathan](https://github.com/elstongun/leviathan)** `[measured]` — deep memory for agents
+  over large datasets. Indexes any table, export, or log once; agents get short
+  cited result cards (~450 tokens per answer) instead of grepping raw history.
+  At 1M records: 436 median tokens per question vs 107K for grep (245×). The
+  measurement surface is *tokens per question at a fixed dataset size*.
+- **[token-harness](https://github.com/ranjithrajv/awesome-token-minimalism/tree/main/harness)** `[measured]` — paired A/B measurement for token-saving tools.
+  The same instruction measured on a single API call (Groq, 48 tasks) vs a full
+  agent session (Copilot CLI, 12 tasks) gives different answers. The measurement
+  surface is *single API call vs full agent loop*.
+- **[Laminar](https://laminar.sh)** `[measured]` — OpenTelemetry-native observability for AI agents.
+  Every LLM span carries input, output, cache-read, cache-write, and reasoning
+  token counts, each priced at its own rate. Costs roll up from span to trace to
+  session. The measurement surface is *per-span token attribution within traces*.
+- **[Prefactor](https://prefactor.tech)** `[measured]` — measures fixed token overhead per agent
+  session. Claude Code spends ~33,000 tokens on framing (system prompt, tool
+  schemas, rules) before any user input; OpenCode spends ~7,000. The measurement
+  surface is *fixed overhead per session, isolated from user input*.
+- **[Spheron](https://www.spheron.network)** `[asserted]` — agentic AI inference cost analysis.
+  Agents burn far more tokens than direct API calls due to tool loops, retries,
+  and accumulating context. The measurement surface is *cost per outcome vs
+  cost per token*.
 
 [↑ Contents](#contents)
 
@@ -867,6 +898,25 @@ The edit protocol is a token decision, not a formatting preference.
 ### ✂️ Prune output at the tool boundary
 
 - **[rtk](https://github.com/ai-skynet-labs/reduce-tokens)** — transparent Bash-output rewrite, claimed 60–90%. ⚠️ **Measured +7.6% cost** at low reasoning effort (p=0.004), ±0% at high. Note its own honest limit: built-in Read/Grep/Glob bypass the hook entirely. `[negative]`
+- **[Headroom](https://github.com/headroomlabs-ai/headroom)** `[measured]` — compresses tool
+  outputs, logs, files, and RAG chunks before they reach the LLM. 20% fewer tokens
+  for coding agents, 60–95% fewer for JSON, same answers. Library, proxy, and MCP
+  server. The capability is preserved — the cost is removed.
+- **[Ratel](https://github.com/ratel-ai/ratel)** `[measured]` — context engineering for AI
+  agents. ~80% fewer tokens. Fixes tool overload. Skills and memory with in-process
+  BM25 and semantic retrieval. Progressive disclosure. No vector DB.
+- **[Chisle](https://github.com/JayPokale/Chisle)** `[measured]` — cuts token bill on three
+  axes: terse prose, YAGNI-first code, and tool-output compression. MIT licensed,
+  zero dependencies. Published benchmarks: 83% of bare model billed tokens on a
+  26-cell Claude Code run (2026-10-01), 52% average on 20 live tasks. The only arm
+  below a bare model. Pays on long answers and coding prompts; breaks even on
+  short answers. The capability is preserved — the cost is removed.
+- **[lowfat](https://github.com/zdk/lowfat)** `[measured]` — pluggable CLI filter that
+  strips noise from command output. Rust, zero dependencies. Measured reduction on
+  bundled samples: git diff −16% to −96%, git log −53% to −91%, git status −62% to
+  −74%. The author's own caveat: these percentages are the reduction of a single
+  command's output, not end-to-end agent token usage. The capability is preserved
+  — the cost is removed.
 - **[token-efficiency skill (undefdev)](https://github.com/undefdev/token-efficiency)** — `jq`/`yq`/`awk` over dump-and-read, `ast-grep` over broad search, `git --stat`/`--name-only`, quiet flags, hash-based change detection. Carries a **sunset notice**: it exists because current agents haven't internalized efficient tool use, and will be retired as they do. Steal that framing. `[self-reported]`
 - **[Cognition's retriever lessons](https://cognition.com/blog)** — a trained model *always* writes tests for every tiny change; give it a measurable target instead. See [Leg 3](#leg-3--lifetime). `[measured]`
 
@@ -1498,6 +1548,7 @@ Adjacent lists, linked rather than duplicated:
 - [Glossary](GLOSSARY.md) — every load-bearing term in this list, defined once with the number that makes it matter.
 - [Resources](RESOURCES.md) — external frameworks, essays, and analysis about token minimalism.
 - [Token Maxxing](TOKENMAXXING.md) — the negative-result catalog: cited blow-ups, from fleet-scale bills to optimizers that cost more.
+- [Showcase](SHOWCASE.md) — **for project maintainers.** Submit your own tool; the grade is yours to state. Held to the same four criteria as the main list: FOSS or a real free tier, an additive clause, a number with a baseline, and the repo linked. A showcase entry that reaches `[measured]` gets promoted to the main list.
 - [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers) — the catalogs. Check your schema cost before connecting one.
 - [agentskills.io](https://agentskills.io/) · [spec](https://agentskills.io/specification) — three-tier progressive disclosure: ~100 tokens of catalog per skill, <5k instructions on activation, unlimited resources on access.
 - [AGENTS.md](https://agents.md/) — nested-scoped instructions, 60k+ projects, stewarded by the Agentic AI Foundation under the Linux Foundation.

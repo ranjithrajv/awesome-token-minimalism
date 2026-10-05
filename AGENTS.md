@@ -8,10 +8,14 @@ Agent instructions for this repository. Deliberately short — this repo's own
 ## What this repo is
 
 An awesome list plus its own measurement layer. The content docs are
-`README.md`, `TOKENMAXXING.md`, `GLOSSARY.md`, `RESOURCES.md`, and
+`README.md`, `TOKENMAXXING.md`, `GLOSSARY.md`, `RESOURCES.md`, `SHOWCASE.md`, and
 `CONTRIBUTING.md`; `harness/` and `posts/` hold the paired A/B rig and its
 result writeups; `.github/scripts/check_annotations.py` is the CI gate. The rest
 is scaffolding and metadata (`CITATION.cff`, `LICENSE`).
+
+`SHOWCASE.md` is the one place a maintainer submits their own tool. The grade is
+theirs to state there, which is why the file labels the distinction instead of
+blending it with the independently assembled list.
 
 ## The one rule
 
@@ -34,6 +38,7 @@ python .github/scripts/check_annotations.py README.md                 # must pri
 python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
 python .github/scripts/check_annotations.py RESOURCES.md              # external-resource doc
 python .github/scripts/check_annotations.py TOKENMAXXING.md           # negative-result catalog
+python .github/scripts/check_annotations.py --allow-empty SHOWCASE.md # maintainer submissions
 python .github/scripts/check_annotations.py --urls README.md          # link extraction
 ```
 
@@ -42,8 +47,9 @@ linked entries, same-file `#anchor` targets, and cross-file `other.md#anchor`
 targets. It reproduces GitHub's slug rules rather than guessing at them — emoji
 get percent-encoded, em dashes get dropped, and **runs of spaces are not
 collapsed**, so `## Leg 1 — Input` slugs to `#leg-1--input` with two hyphens.
-If it flags your entry, fix the missing field; if it flags an anchor, fix the
-anchor. Do not relax the check.
+Fenced code blocks are blanked before grading, so an entry template quoted as an
+example is not itself an entry. If it flags your entry, fix the missing field; if
+it flags an anchor, fix the anchor. Do not relax the check.
 
 ## Editing the README
 
@@ -70,6 +76,10 @@ anchor. Do not relax the check.
   not features.
 - Duplicate a neighboring awesome list. Link it and add the token cost, which
   is the part they don't carry.
+- Present a `[self-reported]` number as `[measured]`. That applies doubly in
+  `SHOWCASE.md`, where the submitter is the author: the grade is theirs to state
+  and the file says so. A maintainer entry graded `[measured]` gets its
+  methodology reviewed like anyone else's.
 
 ## Commit shape
 

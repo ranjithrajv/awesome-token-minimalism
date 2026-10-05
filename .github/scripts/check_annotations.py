@@ -14,6 +14,7 @@ Usage:
     python check_annotations.py README.md
     python check_annotations.py --urls README.md
     python check_annotations.py --anchors-only GLOSSARY.md
+    python check_annotations.py --allow-empty SHOWCASE.md
 """
 
 from __future__ import annotations
@@ -37,6 +38,34 @@ HEADING_RE = re.compile(r"^#{2,4}\s+(.+)$", re.M)
 ANCHOR_RE = re.compile(r"\]\(#([^)]+)\)")
 # [text](other.md#anchor) — validated against the target file, not this one.
 CROSS_RE = re.compile(r"\]\((?!https?://)([^)#\s]+\.md)#([^)\s]+)\)")
+FENCE_RE = re.compile(r"^\s*(```|~~~)")
+
+
+def strip_fences(lines: list[str]) -> list[str]:
+    """Blank out fenced code blocks, preserving line numbers.
+
+    A fenced block is example or command text, not a graded entry. The entry
+    format in SHOWCASE.md and CONTRIBUTING.md is quoted inside a fence, and a
+    fence-blind linter flags its own documentation. Blanking rather than
+    dropping keeps every reported line number pointing at the real source.
+    """
+    out: list[str] = []
+    fence: str | None = None
+    for line in lines:
+        stripped = line.lstrip()
+        if fence is None:
+            m = FENCE_RE.match(line)
+            if m:
+                fence = m.group(1)
+                out.append("")
+                continue
+            out.append(line)
+        else:
+            # Inside a fence: close on a matching delimiter, then blank it.
+            if stripped.startswith(fence):
+                fence = None
+            out.append("")
+    return out
 
 
 def gh_slug(heading: str) -> str:
@@ -152,6 +181,7 @@ def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     want_urls = "--urls" in sys.argv
     anchors_only = "--anchors-only" in sys.argv
+    allow_empty = "--allow-empty" in sys.argv
 
     if not args:
         print(__doc__)
@@ -160,14 +190,20 @@ def main() -> int:
     rc = 0
     for path in args:
         text = pathlib_read(path)
-        lines = text.splitlines()
+        lines = strip_fences(text.splitlines())
         if want_urls:
-            rc |= urls(lines)
+            # Link collection wants real URLs, and a fenced block can contain
+            # one the author quoted as an example. Keep the raw lines here.
+            rc |= urls(text.splitlines())
         else:
+            # Fences are blanked before grading and anchoring: quoted entry
+            # templates must not be graded, and a heading inside a fence is not
+            # an anchor target.
+            fenced_text = "\n".join(lines)
             if not anchors_only:
-                rc |= check_entries(lines, path)
-            rc |= check_anchors(text, path)
-            rc |= check_cross_anchors(text, path)
+                rc |= check_entries(lines, path, required=not allow_empty)
+            rc |= check_anchors(fenced_text, path)
+            rc |= check_cross_anchors(fenced_text, path)
     return rc
 
 

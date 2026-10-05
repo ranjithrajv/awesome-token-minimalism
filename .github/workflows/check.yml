@@ -19,6 +19,9 @@ jobs:
           python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
           python .github/scripts/check_annotations.py RESOURCES.md
           python .github/scripts/check_annotations.py TOKENMAXXING.md
+          # Maintainer submissions: grades are enforced once entries exist, but
+          # an empty showcase is the current state, not a failure.
+          python .github/scripts/check_annotations.py --allow-empty SHOWCASE.md
 
   links:
     name: Link health
@@ -33,6 +36,7 @@ jobs:
           python .github/scripts/check_annotations.py --urls README.md > /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls RESOURCES.md >> /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls TOKENMAXXING.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls SHOWCASE.md >> /tmp/urls.txt
           echo "$(wc -l < /tmp/urls.txt) links collected"
       - name: Check external links resolve
         run: |
