@@ -104,12 +104,128 @@ power-per-inference, PUE, water, and carbon by grid region, see
 > gets a developer to adopt it. Energy is the argument that makes it worth
 > doing.** All three move for the same reason, which is why this list only
 > tracks one quantity.
+>
+> And there is a fourth gain that isn't a saving at all — **the same changes
+> also make the system more accurate.** That is the next section, and it is the
+> argument that should actually persuade you.
+
+---
+
+## The fourth gain: accuracy
+
+Everything above is about spending less. This is about **being more right**, and
+it is the most counter-intuitive claim in the list: token minimalism is sold as
+a cost play, but in the cases that have been measured properly it is a *quality*
+play first. Removing bloat does not trade accuracy for money — it recovers
+accuracy that the bloat was destroying.
+
+The inversion is worth stating plainly, because the reflex is wrong in a
+specific, testable way:
+
+> You are not removing context. You are removing **context that competes for
+> attention with the context that matters.**
+
+### Five mechanisms
+
+**1. Attention budget — fewer tokens means more attention per token.**
+Every added token spends attention, useful or not, and irrelevant tokens spend
+it more aggressively as input grows. This is [context rot](#%F0%9F%93%8F-effective-context)
+(18 models degraded) and [Lost in the Middle](https://aclanthology.org/2024.tacl-1.9/)
+(relevant information in the middle of a long context falls to *closed-book*
+accuracy). The cleanest experiment is LongMemEval's focused-versus-full arm:
+same question, same relevant passages, only the distractors differ — **focused
+input wins across every model tested.**
+→ Practices: [Select](#%F0%9F%94%8E-select) · [Compress](#%E2%9C%82%EF%B8%8F-compress) · [Delete](#%F0%9F%97%91%EF%B8%8F-delete)
+
+**2. Decision surface — fewer options means better choices.**
+Bloated tool sets don't just cost tokens; they cause wrong tool selection. When
+the choice set stops being ambiguous, accuracy rises *at the same time as the
+schema cost falls*: the Tool Search Tool took tool selection from **49% → 74%**
+(Opus 4) and **79.5% → 88.1%** (Opus 4.5) while cutting 134k → 8.7k tokens.
+Compare the [marketplace-scan measurement](https://www.microsoft.com/en-us/research/blog/tool-space-interference-in-the-mcp-era-designing-for-agent-compatibility-at-scale):
+one MCP tool averaged **557,766 output tokens**. Bloat isn't incidental to the
+error — it *is* the error.
+→ Practices: tool routing · progressive discovery · [Isolate](#%F0%9F%A7%B1-isolate)
+
+**3. The output channel — typed decisions cannot fabricate.**
+A model that writes prose can invent. A model that returns one of four labels,
+a value on a rubric, or a probability cannot produce a token that isn't in the
+answer space. This is why [decision models](#%F0%9F%8E%AF-decide-dont-generate)
+are described as unable to hallucinate *as a property of the architecture*, not
+as a claim about their training. It is also why schema-constrained and enum
+outputs are safer than "return JSON": the constraint is structural, so the
+validation step that could fail doesn't exist.
+→ Practices: [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) · [Constrain](#%F0%9F%A7%BE-constrain)
+
+**4. Less overthinking — shorter reasoning drifts less.**
+Reasoning models don't just spend tokens when they think longer; they get pulled
+into branches and validation loops that produce wrong answers. Across the papers
+in [Reason less](#%F0%9F%A7%A0-reason-less), accuracy goes **up** as output
+shrinks:
+
+| Method | Output tokens | Accuracy |
+|---|---|---|
+| TALE | 318 → **77** | GSM8K **81.35% → 84.46%** |
+| MUTO | **−87.1%** | **+2.3%** |
+| NoWait | 15,240 → **10,548** | 67% → **68%** |
+| CCoT-100 | 99 → 71 words | GSM8K **36.01% → 41.07%** |
+| Chain of Draft | 172.5 → **31.3** | date understanding **87.0% → 89.7%** |
+| TRS | fewer | **+45–80%** on the hardest tasks |
+
+The reported reason is consistent: **less reasoning drift.** Long traces wander
+into complexity that easy problems don't have.
+→ Practices: [Reason less](#%F0%9F%A7%A0-reason-less) · [Budget](#%F0%9F%8E%AF-budget)
+
+**5. Retention under deletion — keep the decisions, drop the noise.**
+Deleting well is not the same as deleting a lot. Anthropic measured **+29%
+agentic-search performance from context editing alone** and **+39% with a memory
+tool** — both while reducing tokens, and their stated mechanism is that the model
+"focuses only on relevant context." The retention bar is what keeps this from
+becoming the microcompact failure.
+→ Practices: [Delete](#%F0%9F%97%91%EF%B8%8F-delete) · [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one)
+
+### Where it breaks — read this before repeating the claim
+
+The claim is **"less irrelevant context," not "less context."** These are real
+counterexamples and they bound the argument:
+
+- **Longer-and-better can win.** More curated few-shot examples genuinely raise
+  accuracy. The lever is *relevance density*, not volume — which is why
+  [many-shot prompting](https://claude.com/blog/prompt-caching) is a legitimate
+  technique and "trim everything" is not.
+- **Aggressive compression loses information.** Compression that drops a file
+  path causes re-fetching, and worse, wrong answers from an agent reasoning
+  without the detail it needed. Optimize
+  [tokens-per-task](#token-ledger), not tokens-per-request.
+- **Tight budgets backfire.** A 10-token reasoning budget produced **157**
+  output tokens against 86 for a 50-token budget, plus >20% relative accuracy
+  loss. Constraints that the model can't satisfy degrade output.
+- **Chain of Draft is model-dependent.** −4.3 points on GPT-4o arithmetic while
+  *gaining* on Claude and on date-understanding. Accuracy effects are per-model
+  and per-task; check yours.
+- **Decision models aren't a free upgrade.** Laya's zero-shot accuracy is
+  **0.362** against a **0.318** random baseline. The hallucination safety is
+  architectural; the accuracy is not.
+
+### The rule
+
+> **Relevance density, not volume.** A smaller context that contains everything
+> that matters beats a larger one that contains it somewhere. Almost every
+> accuracy improvement in this list is a consequence of that single trade — and
+> almost every regression is a case where something that mattered got removed
+> along with something that didn't.
+
+Which is also why the [evidence grades](#evidence-grades) matter more here than
+anywhere else: "minimalism improves accuracy" is true in the measured cases, and
+it is exactly the kind of claim that gets repeated as a slogan after the
+measurement is forgotten.
 
 ---
 
 ## Contents
 
 - [What you actually save](#what-you-actually-save) — money, time, and energy, from one lever
+- [The fourth gain: accuracy](#the-fourth-gain-accuracy) — why less bloat is *more* correct
 - [How to read this](#how-to-read-this)
 - [Glossary](GLOSSARY.md) — every load-bearing term, defined once
 - [The three legs](#the-three-legs) — the frame everything else hangs on
@@ -147,6 +263,7 @@ you're here:
 | **Argue with the premise** | [The three legs](#the-three-legs) → [What counts as bloat](#what-counts-as-bloat) → [Interaction matrix](#interaction-matrix) |
 | **Cut a bill this week** | [Leg 0](#leg-0--measure) (see the waste) → [Leg 1 · Budget](#%F0%9F%93%90-budget) and [Leg 2 · Audit](#%F0%9F%93%90-audit) (find the two invisible costs) → [Token ledger](#token-ledger) (don't trust the tool's homepage) |
 | **Build an agent** | [Effective context](#%F0%9F%93%8F-effective-context) → [Select](#%F0%9F%94%8E-select) → [Isolate](#%F0%9F%A7%B1-isolate) → [Reason less](#%F0%9F%A7%A0-reason-less) → [Laws](#laws) |
+| **Make an agent more accurate** | [The fourth gain](#the-fourth-gain-accuracy) → [Select](#%F0%9F%94%8E-select) (decision surface) → [Reason less](#%F0%9F%A7%A0-reason-less) (drift) → [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one) (delete without losing guards) |
 | **Justify it upward** | [What you actually save](#what-you-actually-save) (money, time, energy) → [🧮 Break-even](#%F0%9F%A7%AE-break-even) (the arithmetic) → [Token ledger](#token-ledger) (the cautionary half) |
 | **Review a tool someone recommended** | [Evidence grades](#evidence-grades) → [Token ledger](#token-ledger) → [Anti-patterns](#anti-patterns) |
 
@@ -968,28 +1085,29 @@ the durable part.
 6. Advertised context ≠ effective context. Benchmark yours.
 7. **Cache hit rate is the primary metric, not cache size.** Nothing here is verifiable without it, and at ~10× the price difference it is the largest single lever on the input bill.
 8. **Deletion and caching are the same lever pointed opposite ways.** Clearing tool results trades every-turn cost for once-per-invalidation cost. Decide with the hit rate in front of you, never with the token count.
+9. **Relevance density, not volume.** A smaller context containing everything that matters beats a larger one containing it somewhere. Almost every accuracy gain here follows from that trade, and almost every regression is something that mattered being removed with something that didn't.
 
 **Output**
 
-9. Output tokens are 5× the price. Treat them as the scarce resource.
-10. **Reasoning tokens are output tokens. Instrument them, or they're free money for your provider.**
-11. A budget you can't meet isn't a budget — it's a suggestion the model overpays on.
-12. Prefer a schema to a paragraph; a tool call to a sentence.
-13. Ask for the smallest thing that answers the question. Then check that it did.
-14. A diff is not a rewrite. Edit protocols are a token decision.
-15. Verbosity is trainable, which means brevity is sometimes an artifact, not a fact. Measure per model.
-16. Token count, latency, and dollars are three different numbers. Know which one you reduced.
-17. **Autoregressive output is serial by construction.** The causal mask is why output costs 5× and reasoning costs 13×. When the answer is a bounded choice, a score on a rubric, or a yes/no, the strongest move is not shorter output — it is a model class with no output stream. Removing a term beats shrinking it.
+10. Output tokens are 5× the price. Treat them as the scarce resource.
+11. **Reasoning tokens are output tokens. Instrument them, or they're free money for your provider.**
+12. A budget you can't meet isn't a budget — it's a suggestion the model overpays on.
+13. Prefer a schema to a paragraph; a tool call to a sentence.
+14. Ask for the smallest thing that answers the question. Then check that it did.
+15. A diff is not a rewrite. Edit protocols are a token decision.
+16. Verbosity is trainable, which means brevity is sometimes an artifact, not a fact. Measure per model.
+17. Token count, latency, and dollars are three different numbers. Know which one you reduced.
+18. **Autoregressive output is serial by construction.** The causal mask is why output costs 5× and reasoning costs 13×. When the answer is a bounded choice, a score on a rubric, or a yes/no, the strongest move is not shorter output — it is a model class with no output stream. Removing a term beats shrinking it.
 
 **Lifetime**
 
-18. **You emit context, you don't just spend it.** Review artifact cost like API cost.
-19. **An open-ended cleanup goal will be undershot. Bound it** — name the target and the guard metric.
-20. **A deletion without a retention bar is a regression with extra steps.** State what each thing independently protects before removing it.
-21. **Never convert uncertain candidates into cleanup to hit a number.** This applies to PRs and to ledger entries alike.
-22. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
-23. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
-24. **One change, three budgets.** Money, wall-clock, and joules are all metered per token, so reducing tokens is the rare optimization with no trade-off face. When you find one that trades one budget for another — speculative decoding, precomputed KV — say which one you spent.
+19. **You emit context, you don't just spend it.** Review artifact cost like API cost.
+20. **An open-ended cleanup goal will be undershot. Bound it** — name the target and the guard metric.
+21. **A deletion without a retention bar is a regression with extra steps.** State what each thing independently protects before removing it.
+22. **Never convert uncertain candidates into cleanup to hit a number.** This applies to PRs and to ledger entries alike.
+23. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
+24. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
+25. **One change, three budgets.** Money, wall-clock, and joules are all metered per token, so reducing tokens is the rare optimization with no trade-off face. When you find one that trades one budget for another — speculative decoding, precomputed KV — say which one you spent.
 
 ---
 

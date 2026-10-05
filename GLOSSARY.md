@@ -151,8 +151,19 @@ see [Break-even](README.md#%F0%9F%A7%AE-break-even) for the threshold.
 **Reasoning token** — Internal deliberation tokens in a reasoning model. Billed
 at the **output** rate (the expensive one — often 5× input) and usually not
 broken out on any dashboard. They can exceed 80% of total output cost while the
-visible response is unchanged.
+visible response is unchanged. They are also where *overthinking* lives: longer
+traces drift into branches and validation loops, which is why the measured
+effect of shortening them is usually accuracy going **up**.
 → [Leg 2 · Audit](README.md#%F0%9F%93%90-audit)
+
+**Relevance density** — The share of tokens in the window that bear on the task.
+The variable that actually determines quality; volume is a proxy that misleads.
+Higher density is what raises accuracy (fewer distractors competing for
+attention), and lower density is what context rot measures. The rule follows:
+*less irrelevant context, not less context.* The boundary case is
+many-shot prompting — more curated examples genuinely help, because they raise
+density rather than diluting it.
+→ [The fourth gain: accuracy](README.md#the-fourth-gain-accuracy)
 
 **Retention bar** — The explicit list of things a deletion pass must **never**
 remove (public API, protocol, migration, security, release contracts, regressions
