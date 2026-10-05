@@ -7,8 +7,9 @@ check it with.
 
 ## What this repo is
 
-An awesome list. Three files matter: `README.md`, `CONTRIBUTING.md`, and
-`.github/scripts/check_annotations.py`. Everything else is CI scaffolding.
+An awesome list. Four files matter: `README.md`, `GLOSSARY.md`,
+`CONTRIBUTING.md`, and `.github/scripts/check_annotations.py`. Everything else
+is CI scaffolding.
 
 ## The one rule
 
@@ -27,14 +28,18 @@ Split verdicts use a compound tag: `[measured]/[asserted]`.
 ## Before you open a PR
 
 ```sh
-python .github/scripts/check_annotations.py README.md   # must print 0 problems
-python .github/scripts/check_annotations.py --urls README.md   # link extraction
+python .github/scripts/check_annotations.py README.md                 # must print 0 problems
+python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
+python .github/scripts/check_annotations.py --urls README.md          # link extraction
 ```
 
-The script runs the same gate as CI and checks three things: evidence grades,
-linked entries, and internal `#anchor` targets (using GitHub's slug rules — it
-percent-encodes emoji and does *not* collapse runs of spaces). If it flags your
-entry, the fix is to add the missing field, not to relax the check.
+The script runs the same gate as CI and checks four things: evidence grades,
+linked entries, same-file `#anchor` targets, and cross-file `other.md#anchor`
+targets. It reproduces GitHub's slug rules rather than guessing at them — emoji
+get percent-encoded, em dashes get dropped, and **runs of spaces are not
+collapsed**, so `## Leg 1 — Input` slugs to `#leg-1--input` with two hyphens.
+If it flags your entry, fix the missing field; if it flags an anchor, fix the
+anchor. Do not relax the check.
 
 ## Editing the README
 

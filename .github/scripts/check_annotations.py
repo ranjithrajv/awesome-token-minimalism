@@ -13,10 +13,12 @@ Three checks, because each has caught a real defect in this repo:
 Usage:
     python check_annotations.py README.md
     python check_annotations.py --urls README.md
+    python check_annotations.py --anchors-only GLOSSARY.md
 """
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 import unicodedata
@@ -33,6 +35,8 @@ GRADE_RE = re.compile(rf"\[{GRADE_TAG}\](?:/\[{GRADE_TAG}\])*")
 URL_RE = re.compile(r"\]\((https?://[^)\s]+)\)")
 HEADING_RE = re.compile(r"^#{2,4}\s+(.+)$", re.M)
 ANCHOR_RE = re.compile(r"\]\(#([^)]+)\)")
+# [text](other.md#anchor) — validated against the target file, not this one.
+CROSS_RE = re.compile(r"\]\((?!https?://)([^)#\s]+\.md)#([^)\s]+)\)")
 
 
 def gh_slug(heading: str) -> str:
@@ -60,13 +64,16 @@ def gh_slug(heading: str) -> str:
     return urllib.parse.quote("".join(kept).replace(" ", "-"), safe="-_~")
 
 
-def check_entries(lines: list[str], path: str) -> int:
+def check_entries(lines: list[str], path: str, required: bool = True) -> int:
     entries = [(n, ln) for n, ln in enumerate(lines, 1) if ENTRY_RE.match(ln)]
     problems = 0
 
     if not entries:
-        print(f"::error::{path}: no list entries found")
-        return 1
+        if required:
+            print(f"::error::{path}: no list entries found")
+            return 1
+        print(f"{path}: no graded entries (file is not a list index)")
+        return 0
 
     for n, line in entries:
         if not GRADE_RE.search(line):
@@ -106,6 +113,31 @@ def check_anchors(text: str, path: str) -> int:
     return 1 if missing else 0
 
 
+def check_cross_anchors(text: str, path: str) -> int:
+    """Validate `](other.md#anchor)` links against the target file's headings."""
+    base = os.path.dirname(os.path.abspath(path))
+    cache: dict[str, set[str]] = {}
+    missing = 0
+    seen = set()
+    for target, anchor in CROSS_RE.findall(text):
+        if (target, anchor) in seen:
+            continue
+        seen.add((target, anchor))
+        full = os.path.normpath(os.path.join(base, target))
+        if not os.path.exists(full):
+            print(f"::error file={path}::link target does not exist: {target}")
+            missing += 1
+            continue
+        if target not in cache:
+            with open(full, encoding="utf-8") as fh:
+                cache[target] = {gh_slug(h) for h in HEADING_RE.findall(fh.read())}
+        if anchor not in cache[target]:
+            print(f"::error file={path}::broken cross-file anchor {target}#{anchor}")
+            missing += 1
+    print(f"{path}: {len(seen)} cross-file anchors checked, {missing} broken")
+    return 1 if missing else 0
+
+
 def urls(lines: list[str]) -> int:
     seen: set[str] = set()
     for line in lines:
@@ -119,6 +151,7 @@ def urls(lines: list[str]) -> int:
 def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     want_urls = "--urls" in sys.argv
+    anchors_only = "--anchors-only" in sys.argv
 
     if not args:
         print(__doc__)
@@ -131,8 +164,10 @@ def main() -> int:
         if want_urls:
             rc |= urls(lines)
         else:
-            rc |= check_entries(lines, path)
+            if not anchors_only:
+                rc |= check_entries(lines, path)
             rc |= check_anchors(text, path)
+            rc |= check_cross_anchors(text, path)
     return rc
 
 

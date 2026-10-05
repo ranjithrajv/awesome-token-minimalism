@@ -149,19 +149,27 @@ depends on, and they are cited as sources constantly.
    a compound tag (`[measured]/[asserted]`). The linter only reads that line,
    and so does anyone skimming the list.
 
-CI runs one script, `.github/scripts/check_annotations.py`, which checks three
-things: evidence grades, that entries are linked, and that internal `#anchor`
-targets resolve. It reproduces GitHub's slug rules rather than guessing at
-them — emoji get percent-encoded, em dashes get dropped, and **runs of spaces
-are not collapsed**, so `## Leg 1 — Input` slugs to `#leg-1--input` with two
-hyphens. Four cross-references in this file were silently broken until that
-check existed; if it flags yours, the fix is to correct the anchor, not to
-disable the check.
+CI runs one script, `.github/scripts/check_annotations.py`, which checks four
+things: evidence grades, that entries are linked, same-file `#anchor` targets,
+and cross-file `other.md#anchor` targets. It reproduces GitHub's slug rules
+rather than guessing at them — emoji get percent-encoded, em dashes get dropped,
+and **runs of spaces are not collapsed**, so `## Leg 1 — Input` slugs to
+`#leg-1--input` with two hyphens. Several cross-references were silently broken
+before those checks existed; if one flags you, fix the anchor, not the check.
 
 ```sh
-python .github/scripts/check_annotations.py README.md   # grades + anchors
-python .github/scripts/check_annotations.py --urls README.md   # link health
+python .github/scripts/check_annotations.py README.md                 # grades + anchors
+python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
+python .github/scripts/check_annotations.py --urls README.md          # link health
 ```
+
+### Two files, two formats
+
+- **`README.md`** is the list. Every bullet beginning `- **[` needs a grade on
+  its first line.
+- **`GLOSSARY.md`** is definitions, and carries no grades. It is checked for
+  anchors only. Add a term when a contributor reasonably asks what it means —
+  the test is whether the README uses it as if it were obvious.
 
 ## License
 

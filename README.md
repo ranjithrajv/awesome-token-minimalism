@@ -12,6 +12,7 @@ the first. The bill for the third is the one nobody has instrumented.
 ## Contents
 
 - [How to read this](#how-to-read-this)
+- [Glossary](GLOSSARY.md) — every load-bearing term, defined once
 - [The three legs](#the-three-legs) — the frame everything else hangs on
 - [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
 - [Evidence grades](#evidence-grades) — the one non-negotiable rule
@@ -19,12 +20,14 @@ the first. The bill for the third is the one nobody has instrumented.
 - [Leg 1 — Input](#leg-1--input) — what you send
   - [📏 Effective context](#%F0%9F%93%8F-effective-context) — why every section after it exists
   - [🕸️ Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) — 879 tokens vs 331,375 on the same corpus
+  - [🖼️ Multimodal tokens](#%F0%9F%96%BC%EF%B8%8F-multimodal-tokens) — same pixels, ~16× spread
   - [🗑️ Delete](#%F0%9F%97%91%EF%B8%8F-delete) — and why it spends your cache
   - [💾 Cache](#%F0%9F%92%BE-cache) — three mechanisms people conflate
 - [Leg 2 — Output](#leg-2--output) — what you get billed for
 - [Leg 3 — Lifetime](#leg-3--lifetime) — what you emit becomes context forever
 - [Serve-side](#serve-side-cost-and-latency-not-token-count) — cheaper without being fewer
 - [Interaction matrix](#interaction-matrix) — where this list argues with itself
+- [🧮 Break-even](#%F0%9F%A7%AE-break-even) — the arithmetic that settles those arguments
 - [Laws](#laws)
 - [Token ledger](#token-ledger) — advertised vs. measured
 - [Open problems](#open-problems) — nobody has measured these
@@ -297,6 +300,55 @@ central question settled rather than open, at least for these domains.
 > with deterministic structure — LazyGraphRAG and ContextRAG do it
 > algorithmically, GitLab Orbit does it with change-data-capture, and a
 > wikilink vault does it by hand. All four keep the graph.
+
+### 🖼️ Multimodal tokens
+
+The same pixels cost different amounts depending on who tokenizes them, and the
+spread is not small. A 1024×1024 image:
+
+| Provider | Formula | Cost |
+|---|---|---|
+| Gemini | 258 flat if both dims ≤384px; else 258 per 768×768 tile | **258** |
+| GPT-4o / 4.1, `detail: low` | flat | **85** |
+| GPT-4o / 4.1, `detail: high` | `85 + 170 × tiles`, after fit-to-2048 then shortest-side ≤768 | **765** |
+| Claude (standard tier) | `⌈w/28⌉ × ⌈h/28⌉`, downsized to ≤1568px and ≤1568 tokens | **~1,400** |
+| Claude (high-resolution tier) | same formula, ≤2576px and ≤4784 tokens | **~1,400** (up to 4,784) |
+
+**Same image, ~16× spread.** And none of it scales with file size — only
+dimensions. A 5MB PNG and a 50KB JPEG of the same resolution cost the same, which
+means "compress the image" is the wrong instinct and "resize the image" is the
+right one.
+
+- **[Anthropic vision: resolution and token cost](https://platform.claude.com/docs/en/build-with-claude/vision)** — one visual token per 28×28-pixel patch. Standard tier caps at 1568px long edge / 1568 tokens; [high-resolution tier](https://platform.claude.com/docs/en/build-with-claude/vision-coordinates) (Claude 4.7+) allows 2576px / 4784. Caps are applied *before* you're billed, so **pre-resizing costs you nothing and saves the upload** — a 1920×1080 screenshot is downsized to 1456×819 regardless. `[measured]`
+- **[OpenAI image input cost](https://developers.openai.com/api/docs/guides/image-cost-calculator)** — tile model: `base + tile_tokens × ⌈w/512⌉ × ⌈h/512⌉` after fitting 2048² and clamping the shortest side to 768. Per-model constants: GPT-5/5.1 are 70 + 140, GPT-4o/4.1 are 85 + 170, and **`gpt-4o-mini` is 2,833 + 5,667** — 33× the tile cost of its sibling for the same image. `[measured]`
+- **[`detail: low`](https://platform.openai.com/docs/guides/images-vision)** — flat 85 tokens regardless of size. For "is this a chart or a photo", full resolution is a **30× overpay**: 2,805 tokens vs 85 on a large image. `[measured]`
+- **[Gemini image tokenization](https://ai.google.dev/gemini-api/docs/tokens)** — 258 flat when both dimensions are ≤384px, otherwise 258 per 768×768 tile. So the cheapest image you can send is 258 tokens, and the lever is *shrinking below 384px*, not compressing. Gemini 3 adds `media_resolution` (LOW 280 / MEDIUM 560 / HIGH 1120 / ULTRA_HIGH 2240) instead of tiles. `[measured]`
+- **[Gemini video and audio rates](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/embeddings/get-multimodal-embeddings)** — video at 263 tokens/second, audio at 32/second, 66 per sampled frame. **A one-minute video is ~15,780 tokens** — a full context window, for one clip, before any question is asked. Sample frames on purpose. `[measured]`
+- **[Browser automation: snapshot vs screenshot](https://github.com/JuliusBrussee/caveman)** — a focused question against a 200-row table: **121 tokens as a Playwright ARIA snapshot versus 15,704 as a screenshot — 129.8×** cheaper, and the tree gives exact element handles instead of pixel coordinates. The honest caveat from the same benchmark: on tiny forms the snapshot *loses*, 2.3×, because the tree carries structural overhead the image doesn't. `[self-reported]`
+
+**Rules**
+
+1. **Pass a reference, not bytes.** File paths, URLs, or a Files-API handle. The
+   model fetches what it needs; you don't pay to move pixels through the context
+   twice.
+2. **Prefer a structured representation to a rendering.** Accessibility tree over
+   screenshot, extracted table over page image, transcript over audio waveform.
+   Same information, 1–2 orders of magnitude fewer tokens, usually more precise.
+3. **Resize to the provider's cap.** Every provider downsizes before billing, so
+   sending more resolution is buying nothing. Pre-resizing also cuts TTFT.
+4. **Land on tile boundaries.** OpenAI tiles at 512px: a 770px image is **4
+   tiles / 765 tokens**, while 512px is **1 tile / 255 tokens** for a 3× saving.
+   Pure arithmetic, no quality loss.
+5. **`detail: low` when you only need to know what it is.** Full resolution is for
+   reading text and fine detail, not for classification.
+6. **Don't put the same image in twice.** A screenshot in the user turn and again
+   in a tool result is two full charges; reference it.
+
+> **The framing that transfers:** an image is a *serialization format*, and so is
+> the accessibility tree, and so is an extracted table. Pick the serialization
+> with the lowest token cost that still carries the decision-relevant
+> information. That is the same judgment as [Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering)
+> and [Select](#%F0%9F%94%8E-select), applied to pixels.
 
 ### ✂️ Compress
 
@@ -616,6 +668,135 @@ the reason this list is worth reading rather than skimming.
 
 ---
 
+## 🧮 Break-even
+
+The matrix above says which levers conflict. This says which one wins, as
+arithmetic. Everything is expressed in **ratios**, so it survives a price change;
+the ratios themselves are stamped at the bottom.
+
+### Notation
+
+| Symbol | Means |
+|---|---|
+| `c` | context tokens sent per turn |
+| `o` | output tokens generated per turn |
+| `r` | output price ÷ input price (the multiplier) |
+| `h` | cache hit rate — fraction of `c` served from cache |
+| `w` | cache-write premium (Anthropic: 1.25× base input) |
+| `α` | size after compression, as a fraction of `c` |
+| `p` | input price per token |
+
+Per-turn cost, ignoring the one-time write, is `c·p·[h·0.1 + (1−h)] + o·p·r`.
+
+### 1. When does output dominate?
+
+`o·r > c`, i.e. **`o > c / r`**. At `r = 5` and a 20k-token context, output
+takes over above 4,000 output tokens. Reasoning models cross that line
+routinely — which is why [Leg 2](#leg-2--output) exists at all. If you are
+optimizing input on a reasoning workload, you are optimizing the small term.
+
+### 2. Is one cache write worth it?
+
+Writing costs `w` instead of `1` — an *extra* `w − 1 = 0.25` per token, once.
+Each hit then saves `0.9` per token. So a write pays for itself once
+
+**`0.9·h > w − 1`** → **`h > 0.28`**
+
+At any hit rate above ~28%, **the very next turn repays the write.** Below that,
+count the turns: `T = 1 + (w − 1) / (0.9·h)`.
+
+| Hit rate `h` | Turns to repay (w = 1.25) |
+|---|---|
+| 0.9 | **1.3** |
+| 0.5 | 1.6 |
+| 0.3 | 1.9 |
+| 0.1 | 3.8 |
+
+**The write premium is never the thing to optimize.** What kills you is
+*invalidation*: if `h → 0` while you keep writing, you pay `1.25 ×` forever
+instead of `0.1 ×` — **12.5× worse than a working cache, and 1.25× worse than
+having no cache at all.** A broken cache is worse than none.
+
+### 3. Does compression pay if it breaks the cache?
+
+Compressing to `α·c` with no cache costs `α·c·p`. Leaving it cached costs
+`c·p·[h·0.1 + (1−h)]`. Compression wins when:
+
+**`α < 1 − 0.9·h`**
+
+| Hit rate `h` | Compression must remove |
+|---|---|
+| 0.9 | **>81%** |
+| 0.7 | >63% |
+| 0.5 | >45% |
+| 0.2 | >18% |
+| 0 | >0% (always wins) |
+
+This is [CAPC](https://arxiv.org/html/2607.15516v1)'s finding as a formula, and
+it is the single most useful inequality in the list. **At a 90% hit rate,
+compression has to delete four fifths of the prefix before it pays for the cache
+it destroyed.** Check `h` before you check your compression ratio — it is the
+difference between a win and a regression.
+
+### 4. Is a bigger context worth it?
+
+Adding `Δc` input tokens to prevent one retry of `o_retry` output tokens:
+
+`Δc < o_retry · r`
+
+Adding `Δc` to avoid `n` retries: `Δc < n · o_retry · r`.
+
+At `r = 5`, a 500-token retry justifies **2,500** extra input tokens. Beyond
+that the context is costing more than the failure it prevents — before counting
+[context rot](#%F0%9F%93%8F-effective-context), which subtracts from the benefit
+without appearing in the equation.
+
+### 5. Is reasoning worth its tokens?
+
+A thinking pass of `k` tokens costs `k·p·r`. Worth it when `q·C > k·p·r`, where
+`q` is the probability it converts a failure and `C` is the cost of that
+failure. Enabled uniformly across `N` calls, the waste is
+`(1 − f)·N·k·p·r` where `f` is the fraction that needed it. Enterprise case
+studies put `f` near 0.4, so **~60% of a uniform reasoning budget buys nothing.**
+
+### 6. Multimodal equivalence
+
+Same pixels, ~5× spread. Per image:
+
+| Provider | Formula | 1024×1024 |
+|---|---|---|
+| Gemini | 258 flat ≤384px; else 258/tile | **258** |
+| GPT-4o / 4.1 | `85 + 170 × tiles`, tiles = ⌈w/512⌉·⌈h/512⌉ | **765** |
+| GPT-4o `detail: low` | flat 85 | **85** |
+| Claude (standard) | ⌈w/28⌉·⌈h/28⌉, cap 1,568 | **~1,400** |
+| Claude (high-res tier) | same, cap 4,784 | **~1,400** |
+
+A screenshot is worth `1,400 / (4 chars/token) ≈ 5,600 characters` of text on
+Claude. An accessibility-tree snapshot of the same page measured **121 tokens
+against 15,704** for the screenshot — **129.8×** cheaper and often more
+precise, because the tree is the structure rather than a rendering of it.
+
+### Ratios used, and when to re-check
+
+| Constant | Value | Stability |
+|---|---|---|
+| `r` (output ÷ input) | 4–5 for current frontier text models | **volatile** — re-check on every model release |
+| cache read | 0.1 × input | structural, stable |
+| cache write `w` | 1.25 × input | structural, stable |
+| Gemini image ≤384px | 258 tokens | stable until tiling rules change |
+| Claude standard cap | 1,568 visual tokens | stable; high-res tier is 4,784 |
+
+`[measured]` for the structural constants and the image formulas; `[self-reported]`
+for the `r = 4–5` band, which is a snapshot and belongs to whoever's price sheet
+you're on. **Re-derive the constants, not the formulas** — the inequalities are
+the durable part.
+
+> **The two numbers that decide almost everything:** your cache hit rate `h` and
+> your output-to-input ratio `r`. Instrument both before optimizing anything
+> else in this list.
+
+---
+
 ## Laws
 
 **Input**
@@ -817,6 +998,7 @@ Each one names a **default that shipped unmeasured**, with a receipt.
 
 Adjacent lists, linked rather than duplicated:
 
+- [Glossary](GLOSSARY.md) — every load-bearing term in this list, defined once with the number that makes it matter.
 - [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers) — the catalogs. Check your schema cost before connecting one.
 - [agentskills.io](https://agentskills.io/) · [spec](https://agentskills.io/specification) — three-tier progressive disclosure: ~100 tokens of catalog per skill, <5k instructions on activation, unlimited resources on access.
 - [AGENTS.md](https://agents.md/) — nested-scoped instructions, 60k+ projects, stewarded by the Agentic AI Foundation under the Linux Foundation.

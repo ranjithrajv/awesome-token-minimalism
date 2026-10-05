@@ -14,7 +14,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Check evidence grades and internal anchors
-        run: python .github/scripts/check_annotations.py README.md
+        run: |
+          python .github/scripts/check_annotations.py README.md
+          python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
 
   links:
     name: Link health
