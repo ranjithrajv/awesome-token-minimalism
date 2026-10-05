@@ -1,5 +1,10 @@
 # Awesome Token Minimalism
 
+[![Awesome](https://awesome.re/badge.svg)](https://awesome.re)
+[![Check: annotations, anchors, links](https://github.com/ranjithrajv/awesome-token-minimalism/actions/workflows/check.yml/badge.svg)](https://github.com/ranjithrajv/awesome-token-minimalism/actions/workflows/check.yml)
+[![License: CC0-1.0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)](LICENSE)
+[![List tokens](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ranjithrajv/awesome-token-minimalism/main/.github/badges/tokens.json)](.github/scripts/count_tokens.py)
+
 > **Minimal in, minimal out, minimal forever.**
 > Papers, tools, and patterns for spending fewer tokens on all three sides of an LLM call.
 
@@ -9,10 +14,35 @@ the first. The bill for the third is the one nobody has instrumented.
 
 ---
 
+## TL;DR
+
+**Most token-savings claims fail independent measurement.** Of three popular
+tools put through one paired A/B harness, one delivered −8.5% against a −65%
+claim, one was *more expensive* than baseline, and one underdelivered on code
+size but did deliver on cost. A seven-word prompt — "Follow YAGNI, prefer
+one-liners" — matched the best tool on cost and time. Every entry in this list
+carries an evidence grade: `[measured]`, `[self-reported]`, `[asserted]`, or
+`[negative]`. Read the [token ledger](#token-ledger) before buying anything.
+
+**Measure it yourself:**
+- [`token-receipt`](https://github.com/ranjithrajv/token-receipt) — audit instruction files in any repo
+- [`token-harness`](harness/) — paired A/B measurement for token-saving tools
+- [`count_tokens.py`](.github/scripts/count_tokens.py) — this list meters its own prose; CI fails if it crosses budget
+
+**Copilot CLI baseline** (v1.0.83, `mai-code-1.1-flash`, task: "echo hello"):
+17,549 tokens ($0.055). The tool schemas alone are 8,521 tokens — a permanent
+tax on every session. The capability those schemas provide is real; the
+question is whether loading all 23 eagerly is the only way to provide it.
+Route them on demand and the capability is preserved, the cost is removed.
+See [harness/README.md](harness/README.md) for the full breakdown.
+
+---
+
 ## Contents
 
 - [How to read this](#how-to-read-this) — five routes in, plus the two conventions worth knowing first
 - [Glossary](GLOSSARY.md) — every load-bearing term, defined once
+- [Resources](RESOURCES.md) — external frameworks, essays, and analysis
 - [The case](#the-case) — money, time, energy, and why less bloat is *more* correct
   - [Four gains, one lever](#four-gains-one-lever) — the numbers
   - [Why one lever moves all four](#why-one-lever-moves-all-four) — the mechanism, and its escape hatch
@@ -82,6 +112,15 @@ increase.
 
 Token minimalism is not an aesthetic. Reducing tokens buys **three costs and one
 quality** at once, and they are the things every engineering budget is made of.
+
+```mermaid
+flowchart LR
+    T["fewer tokens"]
+    T --> M["Money<br/>cache reads 0.1× · output ~5×"]
+    T --> W["Time<br/>13–31% faster first token"]
+    T --> E["Energy<br/>25–60% from length control"]
+    T --> A["Accuracy<br/>attention budget · decision surface"]
+```
 
 | Gain | The number |
 |---|---|
@@ -268,6 +307,7 @@ citation.
 
 ### The rule
 
+> [!IMPORTANT]
 > **Relevance density, not volume.** A smaller context that contains everything
 > that matters beats a larger one that contains it somewhere. Almost every
 > accuracy improvement in this list is a consequence of that single trade — and
@@ -287,6 +327,15 @@ measurement is forgotten.
 ---
 
 ## The three legs
+
+```mermaid
+flowchart LR
+    I["Input — what you send<br/>this call · 1× · context rot"]
+    O["Output — what you're billed for<br/>this call · ~5× · overthinking"]
+    L["Lifetime — what you emit<br/>every future call · compounding"]
+    I --> O --> L
+    L -. "emitted artifacts re-enter as input" .-> I
+```
 
 | | Leg | Clock | Multiplier | Failure mode | Levers |
 |---|---|---|---|---|---|
@@ -382,6 +431,9 @@ tools move weekly; an unstamped number is worthless within a month.
 You cannot cut what you cannot see. Most teams have totals and no composition,
 which is why they cannot attribute cost or find the biggest lever.
 
+<details>
+<summary>9 tools — the profiler layer</summary>
+
 - **[contextlens-profiler](https://pypi.org/project/contextlens-profiler/)** — `py-spy` for your prompt. Decomposes the window by region, shows re-billing across turns, names waste patterns (`stale tool result`, `unused tool schema`) with a dollar cost and a one-line fix each. `[measured]`
 - **[contextwatch](https://pypi.org/project/contextwatch/)** — per-turn token ledger; detects *server-side* compaction (`clear_tool_uses`, `compact`) that client-side hash diffing cannot see, because those never touch your messages list. Replay-probes pre/post compaction to score how much recall the compaction destroyed. `[self-reported]`
 - **[contextspy](https://github.com/RimantasZ/contextspy)** — wraps codex/copilot/opencode; splits input into 8 categories and diffs context between turns. `[self-reported]`
@@ -392,9 +444,14 @@ which is why they cannot attribute cost or find the biggest lever.
 - **[ccusage](https://github.com/ccusage/ccusage)** — cost across 16 agent CLIs from local session data. Bills, not estimates. `[measured]`
 - **[Claude Code `/context` breakdown](https://github.com/Beaulewis1977/claude-code-context-command)** — reference numbers for what a session costs *before you type*: system prompt ~8.5k, built-in tools ~15.2k, MCP schemas variable (one real setup: 135.6k, 76.6% of the window). `[self-reported]`
 
+</details>
+
+> [!WARNING]
 > **A tool's own savings counter is not evidence; only the bill is.**
 > `rtk`'s built-in analytics reported *96.2M tokens saved, 99.8% of everything
 > it touched* — while the measured bill for the same trials went **up**.
+
+[↑ Contents](#contents)
 
 ---
 
@@ -437,6 +494,9 @@ work is itself bloat.
 Retrieval is a **runtime** decision, not a preprocessing step. Hold identifiers
 (a file path, a query, a URL) and load the payload when the task needs it.
 
+<details>
+<summary>9 tools and papers — retrieve schemas on demand</summary>
+
 - **[Anthropic: effective context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)** — the canonical statement: *find the smallest possible set of high-signal tokens*. Attention budget, n² pairwise relationships, just-in-time retrieval, progressive disclosure, compaction, note-taking, subagents. (Tool-result clearing from the same post has its own section: [Delete](#%F0%9F%97%91%EF%B8%8F-delete).) `[measured]`
 - **[Tool Search Tool](https://www.anthropic.com/engineering/advanced-tool-use)** — 134k → 8.7k tokens, **and** tool selection improved: Opus 4 49% → 74%, Opus 4.5 79.5% → 88.1%. Fewer schemas, better choices. `[self-reported]`
 - **[MCP client best practices](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/docs/2026-07-28/develop/clients/client-best-practices.mdx)** — progressive discovery + programmatic tool calling, with the threshold at which to switch. `[measured]`
@@ -446,6 +506,8 @@ Retrieval is a **runtime** decision, not a preprocessing step. Hold identifiers
 - **[Serena](https://github.com/oraios/serena)** — symbol-level retrieval and editing over LSP. Ships `.serena/memories/` for cross-session orientation. ⚠️ See the negative result below. `[asserted]`
 - **[serena-slim](https://github.com/mcpslim/serena-slim)** — 29 tools → 18, schema tokens 7,348 → 1,614 (−78%). Good example of tool consolidation as a token lever. `[self-reported]`
 - **[SWE-grep (Cognition)](https://cognition.com/blog)** — RL-trained agentic retrieval for fast parallel context fetch, order of magnitude less time than frontier coding models. `[self-reported]`
+
+</details>
 
 ### 🕸️ Graph engineering
 
@@ -507,7 +569,8 @@ central question settled rather than open, at least for these domains.
 - **[obsidian-graph-mcp](https://github.com/tscolari/obsidian-graph-mcp)** — the purest form, and it answers [True Memory](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) directly: *"your hand-curated links are the graph — no entity extraction, no ontology, no embeddings required."* Unresolved links keep `dst_id NULL`, so **dangling links stay queryable**. That is exactly the recoverability case True Memory argued LLM-extracted graphs lose: nothing is extracted, so nothing can be discarded at ingestion, and a knowledge gap remains addressable later. Frontmatter properties containing wikilinks become typed edges. `[self-reported]`
 - **[logseq-graph-mcp](https://github.com/johnschieferleuhlenbrock/logseq-graph-mcp)** — local-only stdio variant, stdlib-only with no external dependencies; cache and diagnostics kept outside the graph directory, file watchers invalidate state after external edits. The careful-deployment-hygiene counterpart to the graph itself. `[self-reported]`
 
-> ⚠️ **Cost of these graphs is not zero — it's tool schemas.** Each MCP server
+> [!CAUTION]
+> **Cost of these graphs is not zero — it's tool schemas.** Each MCP server
 > here adds 10+ tools to every turn, which is [anti-pattern #1](#anti-patterns)
 > wearing a useful hat. Load them through [progressive
 > discovery](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/docs/2026-07-28/develop/clients/client-best-practices.mdx)
@@ -515,6 +578,7 @@ central question settled rather than open, at least for these domains.
 > layer, or subsume them behind one search-and-traverse tool. A graph that
 > answers "what connects to this?" in one call beats ten narrow tools.
 
+> [!IMPORTANT]
 > **The rule this section reduces to: never pay an LLM to summarize your index
 > when a join would do.** Every large number in the table above traces back to
 > LLM-written edges or community summaries at ingestion. Both can be replaced
@@ -614,7 +678,8 @@ and the second one quietly spends your cache.
 - **[`/clear` vs `/compact`](https://github.com/jaczaar/claude-code-bestpractices/blob/master/research/02-context-management.md)** — `/compact` summarizes and keeps you in the same topic; `/clear` is a hard reset. Don't carry a database migration into a frontend feature. `[asserted]`
 - **[contextwatch](https://pypi.org/project/contextwatch/)** — find *which* result is still costing you: the turn-3 tool output still billing 8k tokens at turn 20. (Listed in [Leg 0](#leg-0--measure); repeated here because deletion is what you do with the answer.) `[self-reported]`
 
-> ⚠️ **Deletion has a blast radius.** [microcompact silently cleared MCP-backed
+> [!CAUTION]
+> **Deletion has a blast radius.** [microcompact silently cleared MCP-backed
 > user memory](https://github.com/anthropics/claude-code/issues/57788) — no
 > notice, no opt-in, and the model could not self-diagnose the loss. Deleting
 > output that a downstream system treats as durable storage is not an
@@ -636,6 +701,7 @@ Strong numbers — and it spends your cache to get them.
 - **[langchain #37815](https://github.com/langchain-ai/langchain/issues/37815)** — ⚠️ `ClearToolUsesEdit` **fires every turn** when a checkpointer is present: edits run on a `deepcopy`, so the `cleared` flag never persists back to state. The edit re-applies forever, and `token_count_method="model"` keeps paying for token counts on unchanged state. A deletion feature that silently costs money on every request. `[negative]`
 - **[LiteLLM context management polyfill](https://docs.litellm.ai/docs/claude_code_context_management)** — applies `clear_tool_uses` in-gateway for any non-Anthropic provider, so you write the loop once. (`clear_thinking` listed as coming soon.) `[self-reported]`
 
+> [!IMPORTANT]
 > **The tradeoff to hold onto:** clearing tool results and keeping them are both
 > defensible, and which wins depends on your cache hit rate — not your token
 > count. Deletion moves cost from every-turn to once-per-invalidation. If you
@@ -688,6 +754,8 @@ to hold. A real architecture, not a micro-optimization.
 - **[ACC — adaptive contextual compression for CAG](https://arxiv.org/html/2505.08261v1)** — **−45% context window occupancy**, sub-700ms inference, +5–10% BERTScore over sparse/dense RAG. The hybrid CAG-RAG variant adds 1–2 BERTScore points for 5–10% latency. `[measured]`
   ⚠️ **And the cost side CAG marketing omits:** on HotpotQA, standard CAG needs **18,000MB** against sparse RAG's 12,000MB — the *most* memory of any arm tested. Compressed CAG (ACC) brings that to 13,000MB. Preloading trades per-query cost for resident memory, permanently.
 
+[↑ Contents](#contents)
+
 ## Leg 2 — Output
 
 What you get billed for, at 5–25× the input rate. Ordered the same way: audit
@@ -697,6 +765,9 @@ it cheaply, and cut it at the tool boundary.
 ### 📐 Audit
 
 Start here. Most of the output bill is invisible.
+
+<details>
+<summary>10 entries — make the invisible bill visible</summary>
 
 - **[Thinking tokens are billed at the output rate](https://getnadir.com/blog/extended-thinking-tokens-output-billing)** — $25/M vs $5/M input on Opus-class. Worked example: 8,200 thinking tokens added **$0.205 to a $0.033 call — 7.2× total, identical visible response.** Most teams have never calculated reasoning overhead as a share of output spend. `[measured]`
 - **[The hidden cost of "cheap" AI](https://dev.to/max_quimby/the-hidden-cost-of-cheap-ai-why-budget-reasoning-models-actually-cost-6x-more-3e0)** — thinking tokens are **>80% of total output cost**. Removing them from the analysis raises the price↔actual-cost correlation from 0.563 to 0.873 and eliminates 70% of rank reversals. Gemini 3 Flash burned 208M thinking tokens on GPQA. *This is the single most important table in the output half.* `[measured]`
@@ -708,6 +779,8 @@ Start here. Most of the output bill is invisible.
 - **[The Energy Cost of Reasoning](https://arxiv.org/pdf/2505.14733v2)** — direct measurement of test-time compute. Reasoning traces average **7,845 output tokens per query** and a ~258MB KV cache even at 7B. The result worth internalizing: going 1.5B → 7B *base* gives **+16.8% accuracy and −40.1% energy**, while adding reasoning traces to the 1.5B gives a similar **+17.3% accuracy for +57.4% energy**. Same accuracy, opposite energy sign — the lever is *how* you buy it. `[measured]`
 - **[Measuring Energy Consumption of LLM Inferences (SIGMETRICS)](https://dl.acm.org/doi/10.1145/3788882.3788890)** — independent measurement across transformer families up to DeepSeek V3/R1, consistent with the above. Use it to sanity-check any energy figure you're quoted. `[measured]`
 - **[From Tokens to Watt-hours](https://arxiv.org/abs/2607.26571)** — an analytical estimator that decomposes inference energy into compute, parameter access, **KV-cache write, and attention read**. That decomposition is why [caching](#%F0%9F%92%BE-cache) is an energy lever and not only a cost lever: the KV work you skip is work you don't pay for in joules either. `[measured]`
+
+</details>
 
 ### 🎯 Budget
 
@@ -727,6 +800,9 @@ Give the model a number. Then check it obeyed.
 
 Not "stop reasoning" — **stop reasoning uniformly about easy problems.**
 
+<details>
+<summary>8 methods — shorten reasoning without losing accuracy</summary>
+
 - **[Chain of Draft](https://arxiv.org/abs/2502.18600)** · [`sileix/chain-of-draft`](https://github.com/sileix/chain-of-draft) · `[measured]`
   "Think step by step, but only keep a minimum draft for each thinking step, 5 words at most." **As little as 7.6% of CoT tokens.** GPT-4o: 205.1 → **43.9** tokens, 4.2s → **1.0s**, accuracy 95.4 → 91.1%. On Claude 3.5 Sonnet / date understanding: 172.5 → **31.3** tokens, accuracy 87.0 → **89.7%** — shorter reasoning was *more* accurate.
 
@@ -737,6 +813,8 @@ Not "stop reasoning" — **stop reasoning uniformly about easy problems.**
 - **[TRS — Thinking with Reasoning Skills (ACL 2026)](https://aclanthology.org/2026.acl-industry.154.pdf)** — reuse *distilled procedural skills* instead of forcing shorter reasoning. Beats TALE/NoWait/CoD on hard tasks (~45–80% uplift on the hardest GPT-OSS sets). Note it can lose money: GPT-OSS-120B gained +4.1 pass@1 at **+4.8% cost** because the prompt grew. `[measured]`
 - **[caveman](https://github.com/JuliusBrussee/caveman)** — output-side prose compression. States its own boundary better than most: *"Caveman only affects output tokens — thinking/reasoning tokens are untouched. Caveman make mouth smaller. Caveman no make brain smaller."* Ships `caveman-compress` for memory files (~46% of CLAUDE.md, permanently) and a three-arm `evals/` harness that explicitly refuses the "verbose vs skill" comparison as *cheating* — comparing to verbose Claude conflates the skill with generic terseness. ⚠️ **Advertised −65%, independently measured −8.5%.** `[measured]/[asserted]` — audit is measured, the tool's own headline is not
 - **[CAVEWOMAN (Adobe Research)](https://arxiv.org/abs/2606.24083)** — cited by caveman as measuring caveman-style output compression across 8 models, 5 datasets, 5 compression levels at 1.4–2.4× cost cut, up to 3×. **Not independently verified here** — treat as self-reported until you read the paper. `[self-reported]`
+
+</details>
 
 ### 🧾 Constrain
 
@@ -768,7 +846,8 @@ is explicit — they give up generation and multi-step reasoning entirely.
 - **Candidate labels compete for a fixed token budget.** Laya splits input into an *option prompt budget* (`head_max_len`: 192 tokens English, 256 multilingual) and a document budget. At 77 options each label receives ~3–4 tokens and becomes indistinguishable — accuracy degrades in a documented way **above ~20 options**, with hierarchical routing as the prescribed fix. A token budget you have to spend wisely even without a decode loop.
 - **The answer space is defined before the call.** `choice` from ≤255, `score` on a 2–10 level rubric, `noul` as a probability. Score absolutely depends on how you shaped the question — there is no room to disambiguate afterward, which is the same [bounded-goal](README.md#leg-3--lifetime) discipline as a measured cleanup target.
 
-> ⚠️ **Do not claim an energy number for these.** Every energy figure in this
+> [!IMPORTANT]
+> **Do not claim an energy number for these.** Every energy figure in this
 > list is per-query at autoregressive inference. Nobody has published Wh/query
 > for a System One model, and "it should be much lower" is an
 > `[asserted]` claim wearing a `[measured]` one's clothes. It's in
@@ -799,6 +878,8 @@ The edit protocol is a token decision, not a formatting preference.
 - **[token-efficiency skill (undefdev)](https://github.com/undefdev/token-efficiency)** — `jq`/`yq`/`awk` over dump-and-read, `ast-grep` over broad search, `git --stat`/`--name-only`, quiet flags, hash-based change detection. Carries a **sunset notice**: it exists because current agents haven't internalized efficient tool use, and will be retired as they do. Steal that framing. `[self-reported]`
 - **[Cognition's retriever lessons](https://cognition.com/blog)** — a trained model *always* writes tests for every tiny change; give it a measurable target instead. See [Leg 3](#leg-3--lifetime). `[measured]`
 
+[↑ Contents](#contents)
+
 ---
 
 ## Leg 3 — Lifetime
@@ -807,6 +888,7 @@ What you emit becomes context that every future session pays for. Ordered by
 when you can act: don't build it, prune what you built, bound the goal you prune
 toward, and hold a retention bar so pruning doesn't eat your guards.
 
+> [!NOTE]
 > **You emit context, you don't just spend it.** Every line an agent generates is
 > a charge on every future session that touches that subsystem. Review artifact
 > cost the way you review API cost.
@@ -834,7 +916,8 @@ Retrospective. Harder, and the highest-leverage work in this list.
 - **[Why models over-test](https://github.com/openclaw/openclaw/blob/main/.agents/skills/openclaw-testing/SKILL.md)** — the sibling skill: *"Do not add tests that merely mirror reversible, low-impact implementation changes."* David's Cramer's one-liner on the original post nails the failure mode: *"they also love rewriting tests when they change code as if the reason for those tests in the first place wasnt to prevent regressions."* `[asserted]`
 - **[Commit archaeology as evidence](https://git.mineracks.com/openclaw/openclaw/commits/commit/61dc7ac67994b8a8ae370d8d90200e87746d1b22)** — a single burst in the history reads `test: expand X coverage` twelve times. Commit-message histograms are a free, retrospective audit of what your agents have been doing to your codebase. `[measured]`
 
-> ⚠️ **Grade this claim honestly.** ~400k LOC with coverage "not much changed" is a
+> [!WARNING]
+> **Grade this claim honestly.** ~400k LOC with coverage "not much changed" is a
 > maintainer report on X: no n, no harness, no baseline, no independent
 > replication. And **coverage is exactly the metric that can be gamed** — deleting
 > 400k lines while coverage holds flat is consistent with the skill's own claim
@@ -880,6 +963,8 @@ an identifier-only refactor.
 This is also the general form of the [microcompact failure](#%F0%9F%97%91%EF%B8%8F-delete):
 deletion without a retention bar is a regression with extra steps.
 
+[↑ Contents](#contents)
+
 ---
 
 ## Serve-side: cost and latency, *not* token count
@@ -907,6 +992,16 @@ Anything that only moves the third column is `⚡ serve-side`.
 
 Bidirectional, tridirectional minimalism has real **contradictions**. They are
 the reason this list is worth reading rather than skimming.
+
+```mermaid
+flowchart TD
+    C["Compress — rewrites the prefix"]
+    D["Delete — clears the prefix"]
+    K["Cache — needs a byte-identical prefix"]
+    C -->|cache miss| K
+    D -->|cache invalidation| K
+    K --> BE["Break-even 2-3<br/>write repays at h over 0.28<br/>compress wins only if alpha below 1 - 0.9h"]
+```
 
 | Pull | Toward | Why they fight |
 |---|---|---|
@@ -963,24 +1058,24 @@ different equation. No break-even applies to a term you removed.
 | `α` | size after compression, as a fraction of `c` |
 | `p` | input price per token |
 
-Per-turn cost, ignoring the one-time write, is `c·p·[h·0.1 + (1−h)] + o·p·r`.
+Per-turn cost, ignoring the one-time write, is $c\,p\,[0.1h + (1-h)] + o\,p\,r$.
 
 ### 1. When does output dominate?
 
-`o·r > c`, i.e. **`o > c / r`**. At `r = 5` and a 20k-token context, output
+$o \cdot r > c$, i.e. **$o > c / r$**. At $r = 5$ and a 20k-token context, output
 takes over above 4,000 output tokens. Reasoning models cross that line
 routinely — which is why [Leg 2](#leg-2--output) exists at all. If you are
 optimizing input on a reasoning workload, you are optimizing the small term.
 
 ### 2. Is one cache write worth it?
 
-Writing costs `w` instead of `1` — an *extra* `w − 1 = 0.25` per token, once.
-Each hit then saves `0.9` per token. So a write pays for itself once
+Writing costs $w$ instead of $1$ — an *extra* $w - 1 = 0.25$ per token, once.
+Each hit then saves $0.9$ per token. So a write pays for itself once
 
-**`0.9·h > w − 1`** → **`h > 0.28`**
+**$0.9h > w - 1$** → **$h > 0.28$**
 
 At any hit rate above ~28%, **the very next turn repays the write.** Below that,
-count the turns: `T = 1 + (w − 1) / (0.9·h)`.
+count the turns: $T = 1 + \dfrac{w-1}{0.9h}$.
 
 | Hit rate `h` | Turns to repay (w = 1.25) |
 |---|---|
@@ -996,10 +1091,10 @@ having no cache at all.** A broken cache is worse than none.
 
 ### 3. Does compression pay if it breaks the cache?
 
-Compressing to `α·c` with no cache costs `α·c·p`. Leaving it cached costs
-`c·p·[h·0.1 + (1−h)]`. Compression wins when:
+Compressing to $\alpha c$ with no cache costs $\alpha c\,p$. Leaving it cached costs
+$c\,p\,[0.1h + (1-h)]$. Compression wins when:
 
-**`α < 1 − 0.9·h`**
+**$\alpha < 1 - 0.9h$**
 
 | Hit rate `h` | Compression must remove |
 |---|---|
@@ -1017,11 +1112,11 @@ difference between a win and a regression.
 
 ### 4. Is a bigger context worth it?
 
-Adding `Δc` input tokens to prevent one retry of `o_retry` output tokens:
+Adding $\Delta c$ input tokens to prevent one retry of $o_{\text{retry}}$ output tokens:
 
-`Δc < o_retry · r`
+$\Delta c < o_{\text{retry}} \cdot r$
 
-Adding `Δc` to avoid `n` retries: `Δc < n · o_retry · r`.
+Adding $\Delta c$ to avoid $n$ retries: $\Delta c < n \cdot o_{\text{retry}} \cdot r$.
 
 At `r = 5`, a 500-token retry justifies **2,500** extra input tokens. Beyond
 that the context is costing more than the failure it prevents — before counting
@@ -1030,10 +1125,10 @@ without appearing in the equation.
 
 ### 5. Is reasoning worth its tokens?
 
-A thinking pass of `k` tokens costs `k·p·r`. Worth it when `q·C > k·p·r`, where
-`q` is the probability it converts a failure and `C` is the cost of that
-failure. Enabled uniformly across `N` calls, the waste is
-`(1 − f)·N·k·p·r` where `f` is the fraction that needed it. Enterprise case
+A thinking pass of $k$ tokens costs $k\,p\,r$. Worth it when $qC > k\,p\,r$, where
+$q$ is the probability it converts a failure and $C$ is the cost of that
+failure. Enabled uniformly across $N$ calls, the waste is
+$(1-f)\,N\,k\,p\,r$ where $f$ is the fraction that needed it. Enterprise case
 studies put `f` near 0.4, so **~60% of a uniform reasoning budget buys nothing.**
 
 ### 6. Multimodal equivalence
@@ -1068,6 +1163,7 @@ for the `r = 4–5` band, which is a snapshot and belongs to whoever's price she
 you're on. **Re-derive the constants, not the formulas** — the inequalities are
 the durable part.
 
+> [!IMPORTANT]
 > **The two numbers that decide almost everything:** your cache hit rate `h` and
 > your output-to-input ratio `r`. Instrument both before optimizing anything
 > else in this list.
@@ -1119,6 +1215,23 @@ Docker-sandboxed SkillsBench tasks, Claude Code headless, paired A/B, pinned
 model, real billed trials, significance tests
 ([JetBrains, 2026](https://blog.jetbrains.com/ai/2026/07/ponytail-skill-claude-tested)).
 
+```
+Advertised vs. measured cost change
+─────────────────────────────────────────────────────────────────────
+caveman    │ −65%  ████████████████████████████████████████████████  │
+           │ −8.5% ████████                                      │  measured
+           │                                                   │
+rtk        │ −60…90% ██████████████████████████████████████████████ │
+           │ +7.6%  ███                                         │  measured
+           │                                                   │
+ponytail   │ −20%   ████████████████                            │
+           │ −10.3% ████████                                    │  measured
+           │                                                   │
+"YAGNI"    │  (no tool)                                        │
+           │ −21%   ████████████████                            │  measured
+           └───────────────────────────────────────────────────┘
+```
+
 | Tool | Advertised | Measured | Quality |
 |---|---|---|---|
 | [`caveman`](https://github.com/JuliusBrussee/caveman) | −65% output tokens | **−8.5%** (86 tasks, sign test p=0.82) | flat |
@@ -1159,6 +1272,9 @@ Anything without a stamp is `[self-reported]`, however large the number.
 ## Open problems
 
 Real gaps. Nobody has measured these.
+
+<details>
+<summary>14 unmeasured questions</summary>
 
 1. **Where does a retention bar stop being worth its tokens?** test-audit's
    retention bar is prose in a skill: it costs tokens on every run and slows
@@ -1220,11 +1336,16 @@ Real gaps. Nobody has measured these.
     high-volume, repeated-state workloads is unmeasured — and it is exactly the
     case where the LLM's 0.1× cache read might win.
 
+</details>
+
 ---
 
 ## Anti-patterns
 
 Each one names a **default that shipped unmeasured**, with a receipt.
+
+<details>
+<summary>19 defaults that shipped unmeasured</summary>
 
 1. **Eagerly-loaded tool schemas.** `tools/list` is a flat payload injected every
    turn; no partial-loading primitive exists in the spec, so every workaround
@@ -1297,6 +1418,10 @@ Each one names a **default that shipped unmeasured**, with a receipt.
     prompt. ⚠️ The exception is load-bearing: anything needing explanation,
     multi-step reasoning, or an unbounded answer still needs the LLM.
 
+</details>
+
+[↑ Contents](#contents)
+
 ---
 
 ## Related
@@ -1304,6 +1429,7 @@ Each one names a **default that shipped unmeasured**, with a receipt.
 Adjacent lists, linked rather than duplicated:
 
 - [Glossary](GLOSSARY.md) — every load-bearing term in this list, defined once with the number that makes it matter.
+- [Resources](RESOURCES.md) — external frameworks, essays, and analysis about token minimalism.
 - [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers) — the catalogs. Check your schema cost before connecting one.
 - [agentskills.io](https://agentskills.io/) · [spec](https://agentskills.io/specification) — three-tier progressive disclosure: ~100 tokens of catalog per skill, <5k instructions on activation, unlimited resources on access.
 - [AGENTS.md](https://agents.md/) — nested-scoped instructions, 60k+ projects, stewarded by the Agentic AI Foundation under the Linux Foundation.

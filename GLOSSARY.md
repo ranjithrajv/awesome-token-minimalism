@@ -197,7 +197,9 @@ can indirectly draw **~0.5 L** of fresh water; global data centres consumed
 ~**4.5 trillion litres** in 2025. Rarely reported by providers and almost never
 allocated per workload, which is why it appears here as context rather than as
 an optimization target.
-→ [How Hungry is AI?](https://arxiv.org/html/2505.09598v6)**Tokens-per-task** — Total tokens consumed from task start to completion,
+→ [How Hungry is AI?](https://arxiv.org/html/2505.09598v6)
+
+**Tokens-per-task** — Total tokens consumed from task start to completion,
 **including re-fetching caused by earlier over-compression**. The correct
 optimization target; tokens-per-request is the naive one that rewards losing
 information you later pay to recover.

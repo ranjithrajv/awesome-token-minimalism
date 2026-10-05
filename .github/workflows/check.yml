@@ -17,6 +17,7 @@ jobs:
         run: |
           python .github/scripts/check_annotations.py README.md
           python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
+          python .github/scripts/check_annotations.py RESOURCES.md
 
   links:
     name: Link health
@@ -29,6 +30,7 @@ jobs:
       - name: Collect links
         run: |
           python .github/scripts/check_annotations.py --urls README.md > /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls RESOURCES.md >> /tmp/urls.txt
           echo "$(wc -l < /tmp/urls.txt) links collected"
       - name: Check external links resolve
         run: |
@@ -50,3 +52,32 @@ jobs:
           if grep -qE '^(000) https?://[^ ]*$' /tmp/status.txt; then
             echo "::warning::some links were unreachable from CI"
           fi
+
+  tokens:
+    name: List token budget
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install tokenizer (falls back to a chars/4 estimate if unavailable)
+        continue-on-error: true
+        run: pip install tiktoken
+      - name: Meter the list's own prose
+        run: python .github/scripts/count_tokens.py --fail-over
+      - name: Publish token badge (main only)
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          if git diff --quiet -- .github/badges/tokens.json; then
+            echo "badge unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/badges/tokens.json
+          git commit -m "chore: update list token badge [skip ci]"
+          git push
