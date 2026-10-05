@@ -163,7 +163,7 @@ attention), and lower density is what context rot measures. The rule follows:
 *less irrelevant context, not less context.* The boundary case is
 many-shot prompting — more curated examples genuinely help, because they raise
 density rather than diluting it.
-→ [The fourth gain: accuracy](README.md#the-fourth-gain-accuracy)
+→ [The accuracy gain](README.md#the-accuracy-gain)
 
 **Retention bar** — The explicit list of things a deletion pass must **never**
 remove (public API, protocol, migration, security, release contracts, regressions

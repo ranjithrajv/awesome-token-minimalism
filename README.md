@@ -9,10 +9,79 @@ the first. The bill for the third is the one nobody has instrumented.
 
 ---
 
-## What you actually save
+## Contents
 
-Token minimalism is not an aesthetic. Reducing tokens buys three things at once,
-and they are the three things every engineering budget is made of.
+- [How to read this](#how-to-read-this) — five routes in, plus the two conventions worth knowing first
+- [Glossary](GLOSSARY.md) — every load-bearing term, defined once
+- [The case](#the-case) — money, time, energy, and why less bloat is *more* correct
+  - [Four gains, one lever](#four-gains-one-lever) — the numbers
+  - [Why one lever moves all four](#why-one-lever-moves-all-four) — the mechanism, and its escape hatch
+  - [The other lever on the same bill](#the-other-lever-on-the-same-bill) — tokens × cost-per-token
+  - [The scale it adds up to](#the-scale-it-adds-up-to) — TWh, water, and lifecycle
+  - [The accuracy gain](#the-accuracy-gain) — five mechanisms, measured
+  - [Where the case breaks](#where-the-case-breaks) — the exceptions, both halves
+  - [The rule](#the-rule) — relevance density, not volume
+- [The three legs](#the-three-legs) — the frame everything else hangs on
+- [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
+- [Evidence grades](#evidence-grades) — the one non-negotiable rule
+- [Leg 0 — Measure](#leg-0--measure) — you cannot cut what you cannot see
+- [Leg 1 — Input](#leg-1--input) — what you send
+  - [📏 Effective context](#%F0%9F%93%8F-effective-context) — why every section after it exists
+  - [🕸️ Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) — 879 tokens vs 331,375 on the same corpus
+  - [🖼️ Multimodal tokens](#%F0%9F%96%BC%EF%B8%8F-multimodal-tokens) — same pixels, ~16× spread
+  - [🗑️ Delete](#%F0%9F%97%91%EF%B8%8F-delete) — and why it spends your cache
+  - [💾 Cache](#%F0%9F%92%BE-cache) — three mechanisms people conflate
+- [Leg 2 — Output](#leg-2--output) — what you get billed for
+  - [🎯 Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — the model class with no output stream
+- [Leg 3 — Lifetime](#leg-3--lifetime) — what you emit becomes context forever
+- [Serve-side](#serve-side-cost-and-latency-not-token-count) — cheaper without being fewer
+- [Interaction matrix](#interaction-matrix) — where this list argues with itself
+- [🧮 Break-even](#%F0%9F%A7%AE-break-even) — the arithmetic that settles those arguments
+- [Laws](#laws)
+- [Token ledger](#token-ledger) — advertised vs. measured
+- [Open problems](#open-problems) — nobody has measured these
+- [Anti-patterns](#anti-patterns) — defaults that shipped unmeasured
+- [Contributing](#contributing)
+
+---
+
+## How to read this
+
+This list is long because the topic has three independent failure modes and
+almost every tool addresses exactly one of them. Five routes, depending on why
+you're here:
+
+| If you want to… | Read |
+|---|---|
+| **Argue with the premise** | [The three legs](#the-three-legs) → [What counts as bloat](#what-counts-as-bloat) → [Interaction matrix](#interaction-matrix) |
+| **Cut a bill this week** | [Leg 0](#leg-0--measure) (see the waste) → [Leg 1 · Budget](#%F0%9F%93%90-budget) and [Leg 2 · Audit](#%F0%9F%93%90-audit) (find the two invisible costs) → [Token ledger](#token-ledger) (don't trust the tool's homepage) |
+| **Build an agent** | [Effective context](#%F0%9F%93%8F-effective-context) → [Select](#%F0%9F%94%8E-select) → [Isolate](#%F0%9F%A7%B1-isolate) → [Reason less](#%F0%9F%A7%A0-reason-less) → [Laws](#laws) |
+| **Make an agent more accurate** | [The accuracy gain](#the-accuracy-gain) → [Select](#%F0%9F%94%8E-select) (decision surface) → [Reason less](#%F0%9F%A7%A0-reason-less) (drift) → [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one) (delete without losing guards) |
+| **Justify it upward** | [The case](#the-case) (money, time, energy) → [🧮 Break-even](#%F0%9F%A7%AE-break-even) (the arithmetic) → [Token ledger](#token-ledger) (the cautionary half) |
+| **Review a tool someone recommended** | [Evidence grades](#evidence-grades) → [Token ledger](#token-ledger) → [Anti-patterns](#anti-patterns) |
+
+Two conventions worth knowing before you start:
+
+- **Every entry carries an evidence grade.** `[measured]` means someone stated a
+  baseline and a method. **None of the four popular tools with independently
+  audited numbers hit their headline** — one was *more expensive* than doing
+  nothing. See [Token ledger](#token-ledger). The grade is the list, not the
+  commentary.
+- **The enemy is bloat, never capability.** Every entry keeps the feature and
+  removes an unmeasured cost. If a technique can't be written that way, it's in
+  [Anti-patterns](#anti-patterns) instead.
+
+---
+
+## The case
+
+Four gains, one lever. Three are costs you reduce and one is a quality you
+increase.
+
+### Four gains, one lever
+
+Token minimalism is not an aesthetic. Reducing tokens buys **three costs and one
+quality** at once, and they are the things every engineering budget is made of.
 
 | Gain | The number |
 |---|---|
@@ -20,7 +89,7 @@ and they are the three things every engineering budget is made of.
 | ⏱️ **Time** | Caching: **13–31%** faster first token. Precomputed KV (CAG): **0.85s vs 9.25s** on HotpotQA — ~11×, up to ~17×. Chain of Draft: **4.2s → 1.0s** per answer. Code-execution harnesses report **~79% faster** on multi-step work. And the failure case nobody prices: agents that exhaust context start *retrying*, and **6 of 13 tool calls** hit context overflow in one measured trace. |
 | 🔋 **Energy** | Response-length control alone is **25–60% energy reduction** with quality preserved — the core answer turns out to be only **42%** of a typical response. Frontier inference is a median of **0.31 Wh/query**; a *reasoning* query at ~5,000 output tokens is **~13×** that. DeepSeek-R1 measured **20.9 Wh/query against 0.21 Wh** for a conventional model — ~100×. A short session can draw ~**0.5 litres of cooling water**. |
 
-### Why one lever moves all three
+### Why one lever moves all four
 
 The mechanism is an asymmetry in how **autoregressive transformers** work:
 
@@ -34,9 +103,10 @@ The mechanism is an asymmetry in how **autoregressive transformers** work:
 Which is why **energy per query tracks output length and not task
 complexity** — and why output costs 5× while reasoning costs 13×.
 
-So tokens are the upstream quantity. Cut them and all three gains follow. That
+So tokens are the upstream quantity. Cut them and all four gains follow. That
 is the whole bet: the same change that lowers the bill also lowers the latency
-*and* the kilowatt-hours, because all three are billed per token.
+*and* the kilowatt-hours *and* the error rate, because they are all metered per
+token.
 
 **And the asymmetry has an escape hatch, which is the logical endpoint of the
 whole argument.** If output is expensive *because* it is serial, the strongest
@@ -45,26 +115,6 @@ non-autoregressive decision model doesn't generate tokens; it returns a typed
 value from one forward pass. Jev prices output at **$0.00** for exactly this
 reason. See [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — it
 is a different equation, not a smaller number in this one.
-
-### And the honest part
-
-The three gains usually move together, but not always, and the exceptions are
-worth knowing:
-
-- **Speculative decoding** cuts latency 2–3× and cost ~60% while reducing
-  **zero tokens**. It's a serve-side win — filed separately, not claimed here.
-- **Precomputing a KV cache** buys query speed with **permanent resident
-  memory** (18GB vs 12GB in the CAG benchmark). Time is bought, not created.
-- **A stale cache with a long TTL** costs money and energy for content nobody
-  reads.
-- **Aggressive compression** can save tokens *and cost more*, once you count the
-  cache you invalidated and the re-fetching you caused — see
-  [Break-even](#%F0%9F%A7%AE-break-even).
-
-None of that weakens the case. It means the case has to be measured rather than
-asserted, which is the entire point of the grades below. **Every number in the
-table above is graded at its own entry** — the summary is a signpost, not a
-citation.
 
 ### The other lever on the same bill
 
@@ -100,18 +150,7 @@ power-per-inference, PUE, water, and carbon by grid region, see
 - Response length is the most direct lever anyone outside a datacentre has, and
   the one that requires no new hardware, no new model, and no new code.
 
-> **Money is the argument that gets a budget approved. Time is the argument that
-> gets a developer to adopt it. Energy is the argument that makes it worth
-> doing.** All three move for the same reason, which is why this list only
-> tracks one quantity.
->
-> And there is a fourth gain that isn't a saving at all — **the same changes
-> also make the system more accurate.** That is the next section, and it is the
-> argument that should actually persuade you.
-
----
-
-## The fourth gain: accuracy
+### The accuracy gain
 
 Everything above is about spending less. This is about **being more right**, and
 it is the most counter-intuitive claim in the list: token minimalism is sold as
@@ -125,7 +164,7 @@ specific, testable way:
 > You are not removing context. You are removing **context that competes for
 > attention with the context that matters.**
 
-### Five mechanisms
+#### Five mechanisms
 
 **1. Attention budget — fewer tokens means more attention per token.**
 Every added token spends attention, useful or not, and irrelevant tokens spend
@@ -184,10 +223,25 @@ tool** — both while reducing tokens, and their stated mechanism is that the mo
 becoming the microcompact failure.
 → Practices: [Delete](#%F0%9F%97%91%EF%B8%8F-delete) · [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one)
 
-### Where it breaks — read this before repeating the claim
+### Where the case breaks
 
-The claim is **"less irrelevant context," not "less context."** These are real
-counterexamples and they bound the argument:
+Both halves of the argument have exceptions, and they are worth knowing before
+you repeat either claim.
+
+**The savings sometimes trade against each other:**
+
+- **Speculative decoding** cuts latency 2–3× and cost ~60% while reducing
+  **zero tokens**. It's a serve-side win — filed separately, not claimed here.
+- **Precomputing a KV cache** buys query speed with **permanent resident
+  memory** (18GB vs 12GB in the CAG benchmark). Time is bought, not created.
+- **A stale cache with a long TTL** costs money and energy for content nobody
+  reads.
+- **Aggressive compression** can save tokens *and cost more*, once you count the
+  cache you invalidated and the re-fetching you caused — see
+  [Break-even](#%F0%9F%A7%AE-break-even).
+
+**And the accuracy claim is narrower than it sounds.** It is *"less irrelevant
+context," not "less context"*:
 
 - **Longer-and-better can win.** More curated few-shot examples genuinely raise
   accuracy. The lever is *relevance density*, not volume — which is why
@@ -207,6 +261,11 @@ counterexamples and they bound the argument:
   **0.362** against a **0.318** random baseline. The hallucination safety is
   architectural; the accuracy is not.
 
+None of that weakens the case. It means the case has to be measured rather than
+asserted, which is the entire point of the grades below. **Every number in the
+tables above is graded at its own entry** — the summary is a signpost, not a
+citation.
+
 ### The rule
 
 > **Relevance density, not volume.** A smaller context that contains everything
@@ -220,63 +279,10 @@ anywhere else: "minimalism improves accuracy" is true in the measured cases, and
 it is exactly the kind of claim that gets repeated as a slogan after the
 measurement is forgotten.
 
----
-
-## Contents
-
-- [What you actually save](#what-you-actually-save) — money, time, and energy, from one lever
-- [The fourth gain: accuracy](#the-fourth-gain-accuracy) — why less bloat is *more* correct
-- [How to read this](#how-to-read-this)
-- [Glossary](GLOSSARY.md) — every load-bearing term, defined once
-- [The three legs](#the-three-legs) — the frame everything else hangs on
-- [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
-- [Evidence grades](#evidence-grades) — the one non-negotiable rule
-- [Leg 0 — Measure](#leg-0--measure) — you cannot cut what you cannot see
-- [Leg 1 — Input](#leg-1--input) — what you send
-  - [📏 Effective context](#%F0%9F%93%8F-effective-context) — why every section after it exists
-  - [🕸️ Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) — 879 tokens vs 331,375 on the same corpus
-  - [🖼️ Multimodal tokens](#%F0%9F%96%BC%EF%B8%8F-multimodal-tokens) — same pixels, ~16× spread
-  - [🗑️ Delete](#%F0%9F%97%91%EF%B8%8F-delete) — and why it spends your cache
-  - [💾 Cache](#%F0%9F%92%BE-cache) — three mechanisms people conflate
-- [Leg 2 — Output](#leg-2--output) — what you get billed for
-  - [🎯 Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — the model class with no output stream
-- [Leg 3 — Lifetime](#leg-3--lifetime) — what you emit becomes context forever
-- [Serve-side](#serve-side-cost-and-latency-not-token-count) — cheaper without being fewer
-- [Interaction matrix](#interaction-matrix) — where this list argues with itself
-- [🧮 Break-even](#%F0%9F%A7%AE-break-even) — the arithmetic that settles those arguments
-- [Laws](#laws)
-- [Token ledger](#token-ledger) — advertised vs. measured
-- [Open problems](#open-problems) — nobody has measured these
-- [Anti-patterns](#anti-patterns) — defaults that shipped unmeasured
-- [Contributing](#contributing)
-
----
-
-## How to read this
-
-This list is long because the topic has three independent failure modes and
-almost every tool addresses exactly one of them. Four routes, depending on why
-you're here:
-
-| If you want to… | Read |
-|---|---|
-| **Argue with the premise** | [The three legs](#the-three-legs) → [What counts as bloat](#what-counts-as-bloat) → [Interaction matrix](#interaction-matrix) |
-| **Cut a bill this week** | [Leg 0](#leg-0--measure) (see the waste) → [Leg 1 · Budget](#%F0%9F%93%90-budget) and [Leg 2 · Audit](#%F0%9F%93%90-audit) (find the two invisible costs) → [Token ledger](#token-ledger) (don't trust the tool's homepage) |
-| **Build an agent** | [Effective context](#%F0%9F%93%8F-effective-context) → [Select](#%F0%9F%94%8E-select) → [Isolate](#%F0%9F%A7%B1-isolate) → [Reason less](#%F0%9F%A7%A0-reason-less) → [Laws](#laws) |
-| **Make an agent more accurate** | [The fourth gain](#the-fourth-gain-accuracy) → [Select](#%F0%9F%94%8E-select) (decision surface) → [Reason less](#%F0%9F%A7%A0-reason-less) (drift) → [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one) (delete without losing guards) |
-| **Justify it upward** | [What you actually save](#what-you-actually-save) (money, time, energy) → [🧮 Break-even](#%F0%9F%A7%AE-break-even) (the arithmetic) → [Token ledger](#token-ledger) (the cautionary half) |
-| **Review a tool someone recommended** | [Evidence grades](#evidence-grades) → [Token ledger](#token-ledger) → [Anti-patterns](#anti-patterns) |
-
-Two conventions worth knowing before you start:
-
-- **Every entry carries an evidence grade.** `[measured]` means someone stated a
-  baseline and a method. **None of the four popular tools with independently
-  audited numbers hit their headline** — one was *more expensive* than doing
-  nothing. See [Token ledger](#token-ledger). The grade is the list, not the
-  commentary.
-- **The enemy is bloat, never capability.** Every entry keeps the feature and
-  removes an unmeasured cost. If a technique can't be written that way, it's in
-  [Anti-patterns](#anti-patterns) instead.
+> **Money is the argument that gets a budget approved. Time is the argument that
+> gets a developer to adopt it. Accuracy is the argument that should actually
+> persuade you. Energy is the argument that makes it worth doing.** All four move
+> for the same reason: they are all metered per token.
 
 ---
 
@@ -297,22 +303,18 @@ so rarely stated. See [Interaction matrix](#interaction-matrix).
 ### Input, in one line
 
 Adding context is the field's default setting, and it rests on a premise that no
-longer holds. Context is not a bucket — it is a **finite attention budget with
-diminishing returns.** Every model tested got measurably worse as input grew,
-long before any stated limit. See [Effective context](#%F0%9F%93%8F-effective-context).
+longer holds: context is a **finite attention budget with diminishing returns**,
+not a bucket. See [Effective context](#%F0%9F%93%8F-effective-context).
 
 ### Output, in one line
 
-Most of your output bill is invisible. **Reasoning tokens are billed at the
-output rate** and usually aren't broken out on any dashboard. One call with an
-8,200-token thinking pass cost **7.2× more** than the same call without it —
-with an identical visible response. See [Leg 2](#leg-2--output).
+Output is the expensive side and most of its bill is invisible — reasoning
+tokens are usually not broken out on any dashboard. See [Leg 2](#leg-2--output).
 
 ### Lifetime, in one line
 
-Every line an agent generates is a permanent charge on every future session that
-touches that subsystem. OpenClaw deleted **~400k LOC of its own tests** with
-little change in coverage. See [Leg 3](#leg-3--lifetime).
+Everything you emit becomes context that future sessions must read. The leg with
+the longest clock and the fewest tools. See [Leg 3](#leg-3--lifetime).
 
 ---
 
@@ -336,8 +338,9 @@ Three consequences:
 
 **Capability that hasn't been measured is not bloat.** Every entry here passes
 that bar: the capability is preserved, and the number moves. In almost every
-well-measured case, quality went **up** at the same time — deleting bloat frees
-attention, which is the same mechanism as context rot.
+well-measured case the quality moved **up** at the same time — see
+[The accuracy gain](#the-accuracy-gain) for why that is the expected result and
+not a happy accident.
 
 ### A useful asymmetry
 
@@ -639,7 +642,6 @@ Strong numbers — and it spends your cache to get them.
 > can't see your hit rate, you can't tell whether you're saving or spending,
 > which is why [rule 4 of Cache](#%F0%9F%92%BE-cache) is the one to read first.
 
-
 ### 💾 Cache
 
 Cheapest input tokens are the ones you don't re-send.
@@ -686,7 +688,6 @@ to hold. A real architecture, not a micro-optimization.
 - **[ACC — adaptive contextual compression for CAG](https://arxiv.org/html/2505.08261v1)** — **−45% context window occupancy**, sub-700ms inference, +5–10% BERTScore over sparse/dense RAG. The hybrid CAG-RAG variant adds 1–2 BERTScore points for 5–10% latency. `[measured]`
   ⚠️ **And the cost side CAG marketing omits:** on HotpotQA, standard CAG needs **18,000MB** against sparse RAG's 12,000MB — the *most* memory of any arm tested. Compressed CAG (ACC) brings that to 13,000MB. Preloading trades per-query cost for resident memory, permanently.
 
-
 ## Leg 2 — Output
 
 What you get billed for, at 5–25× the input rate. Ordered the same way: audit
@@ -700,7 +701,7 @@ Start here. Most of the output bill is invisible.
 - **[Thinking tokens are billed at the output rate](https://getnadir.com/blog/extended-thinking-tokens-output-billing)** — $25/M vs $5/M input on Opus-class. Worked example: 8,200 thinking tokens added **$0.205 to a $0.033 call — 7.2× total, identical visible response.** Most teams have never calculated reasoning overhead as a share of output spend. `[measured]`
 - **[The hidden cost of "cheap" AI](https://dev.to/max_quimby/the-hidden-cost-of-cheap-ai-why-budget-reasoning-models-actually-cost-6x-more-3e0)** — thinking tokens are **>80% of total output cost**. Removing them from the analysis raises the price↔actual-cost correlation from 0.563 to 0.873 and eliminates 70% of rank reversals. Gemini 3 Flash burned 208M thinking tokens on GPQA. *This is the single most important table in the output half.* `[measured]`
 - **[Brevity is the soul of sustainability (ACL 2025)](https://aclanthology.org/2025.findings-acl.1125/)** — the taxonomy everything else builds on: **MinAns** (minimal answer) vs **Irrel** (irrelevant, hallucinated, repeating). MINANS framing ≈ −60% output tokens, explicit length prediction −53%. Annotated dataset released. `[measured]`
-  🔋 **This is also the paper that priced output length in energy**: appropriate length-reduction prompts achieve **25–60% energy reduction with quality preserved**, and the six-category annotation shows the minimal answer is only **~42%** of a typical response. Its key structural finding explains the whole [pitch](#what-you-actually-save): *energy depends largely on output size, not on task complexity or type* — because output is generated sequentially and input is not. [Dataset + code](https://github.com/sohampoddar26/LLM-brevity).
+  🔋 **This is also the paper that priced output length in energy**: appropriate length-reduction prompts achieve **25–60% energy reduction with quality preserved**, and the six-category annotation shows the minimal answer is only **~42%** of a typical response. Its key structural finding explains the whole [case](#the-case): *energy depends largely on output size, not on task complexity or type* — because output is generated sequentially and input is not. [Dataset + code](https://github.com/sohampoddar26/LLM-brevity).
 - **[Verbosity Compensation Behavior (UncertaiNLP 2025)](https://aclanthology.org/2025.uncertainlp-main.14/)** — models trained toward brevity get *worse* at concise answers. Distilling Mistral→GPT cut verbosity compensation from 63.81%→31.79% down to 16.60%. **Brevity can be a training artifact, not a prompt property.** `[measured]`
 - **[Computational Challenges in Token Economics](https://arxiv.org/pdf/2605.17410)** — treats tokens as economic primitives; frames the granularity / real-time / optimality tension. Good survey of the vocabulary. `[measured]`
 - **[Energy use of AI inference (Joule / Microsoft Research)](https://www.cell.com/joule/fulltext/S2542-4351%2826%2900114-5)** — the calibration for every energy claim: frontier-scale inference is a median of **0.31 Wh/query** (IQR 0.16–0.60), and widely-cited public estimates **overstate it by 4–20×** because they assume non-production deployments. The number that matters here: **reasoning queries (~5,000 output tokens) raise energy ~13×.** Also notes model, serving, and hardware gains could cut per-query energy **8–20×** — so this is a lever, not a constraint. `[measured]`
@@ -751,7 +752,7 @@ A schema is usually smaller than a paragraph, and it removes the preamble tax.
 *model*. A **System One decision model** is asked a typed question and returns a
 typed answer — no text stream, no decode loop, no output tokens to minimize.
 It is the endpoint of the Output leg: the serial-generation assumption
-[removed rather than optimized](#why-one-lever-moves-all-three).
+[removed rather than optimized](#why-one-lever-moves-all-four).
 
 The distinction that matters: these are **not smaller LLMs**. They are a
 different model class, built on non-autoregressive architectures, and the trade
