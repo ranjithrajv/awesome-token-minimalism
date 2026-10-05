@@ -55,6 +55,13 @@ distribution — and cuts cost per token ~60% and latency 2–3×. **It reduces 
 tokens.** If your entry only moves cost or latency, mark it `⚡ serve-side`
 rather than claiming a token reduction.
 
+**Energy is the third gain and it is deliberately not a fourth number.**
+Inference energy tracks output length and KV work, both of which are token
+quantities, so a token delta *is* an energy delta and repeating it would be
+noise. Break the convention only where the relationship is surprising — a
+reasoning query running **~13×** the energy of a standard one, or a KV-cache hit
+skipping joules as well as dollars.
+
 Similarly, note *when* a saving lands. Prompt compression shows up as input
 tokens today and latency on the next turn. Caching shows up as cost on turn 2+.
 `rtk` reported 99.8% savings on a counter while the bill went up, which is only

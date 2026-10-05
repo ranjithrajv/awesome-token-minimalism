@@ -81,6 +81,15 @@ manages 64K; Llama3.1-70B falls off after 64K. Near-perfect needle-in-a-haystack
 scores are not evidence of it.
 → [RULER (NVIDIA)](https://github.com/NVIDIA/RULER)
 
+**Energy per query** — Watt-hours consumed serving one request. Frontier-scale
+inference: median **0.31 Wh** (IQR 0.16–0.60), which is 4–20× *below* most
+published estimates because those assume non-production deployments. Scales with
+**output length, not task complexity** — output tokens are generated
+sequentially while input tokens are processed in parallel. A reasoning query at
+~5,000 output tokens runs **~13×** a standard one; DeepSeek-R1 measured
+**20.9 Wh/query** against 0.21 Wh conventional.
+→ [Joule / Microsoft Research](https://www.cell.com/joule/fulltext/S2542-4351%2826%2900114-5)
+
 **Evidence grade** — The four-value vocabulary every entry in this list carries:
 `[measured]`, `[self-reported]`, `[asserted]`, `[negative]`. `[measured]`
 requires a baseline and a method; a number without a baseline is
@@ -152,7 +161,14 @@ rate is published.
 **Token ledger** — This list's table of advertised-versus-independently-measured
 claims. Four popular tools, none hitting its headline, one more expensive than
 doing nothing. The reason the evidence grades exist.
-→ [Token ledger](README.md#token-ledger)**Tokens-per-task** — Total tokens consumed from task start to completion,
+→ [Token ledger](README.md#token-ledger)
+
+**Water footprint** — Litres consumed in cooling, per query. A short LLM session
+can indirectly draw **~0.5 L** of fresh water; global data centres consumed
+~**4.5 trillion litres** in 2025. Rarely reported by providers and almost never
+allocated per workload, which is why it appears here as context rather than as
+an optimization target.
+→ [How Hungry is AI?](https://arxiv.org/html/2505.09598v6)**Tokens-per-task** — Total tokens consumed from task start to completion,
 **including re-fetching caused by earlier over-compression**. The correct
 optimization target; tokens-per-request is the naive one that rewards losing
 information you later pay to recover.

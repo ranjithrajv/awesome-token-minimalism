@@ -9,12 +9,74 @@ the first. The bill for the third is the one nobody has instrumented.
 
 ---
 
+## What you actually save
+
+Token minimalism is not an aesthetic. Reducing tokens buys three things at once,
+and they are the three things every engineering budget is made of.
+
+| Gain | The number |
+|---|---|
+| 💰 **Money** | Cache reads are **0.1×** input price — a 90% discount. Output is **~5×** input. Reasoning tokens are **>80% of total output cost** on some workloads and usually invisible on the dashboard. Context editing measured **−84% tokens** on a 100-turn eval. Graph indexing done the expensive way is ~**1,000×** the cost of the cheap way. |
+| ⏱️ **Time** | Caching: **13–31%** faster first token. Precomputed KV (CAG): **0.85s vs 9.25s** on HotpotQA — ~11×, up to ~17×. Chain of Draft: **4.2s → 1.0s** per answer. Code-execution harnesses report **~79% faster** on multi-step work. And the failure case nobody prices: agents that exhaust context start *retrying*, and **6 of 13 tool calls** hit context overflow in one measured trace. |
+| 🔋 **Energy** | Response-length control alone is **25–60% energy reduction** with quality preserved — the core answer turns out to be only **42%** of a typical response. Frontier inference is a median of **0.31 Wh/query**; a *reasoning* query at ~5,000 output tokens is **~13×** that. DeepSeek-R1 measured **20.9 Wh/query against 0.21 Wh** for a conventional model — ~100×. A short session can draw ~**0.5 litres of cooling water**. |
+
+### Why one lever moves all three
+
+The mechanism is an asymmetry in how transformers work:
+
+- **Input tokens are processed in parallel** and their key/value state can be
+  cached and reused. Cheap in wall-clock, cheap in energy, and *deeply*
+  discountable in price.
+- **Output tokens are generated sequentially.** One at a time. Unavoidably.
+  Which is why **energy per query tracks output length and not task
+  complexity** — and why output costs 5× and reasoning costs 13×.
+
+So tokens are the upstream quantity. Cut them and all three gains follow. That
+is the whole bet: the same change that lowers the bill also lowers the latency
+*and* the kilowatt-hours, because all three are billed per token.
+
+### And the honest part
+
+The three gains usually move together, but not always, and the exceptions are
+worth knowing:
+
+- **Speculative decoding** cuts latency 2–3× and cost ~60% while reducing
+  **zero tokens**. It's a serve-side win — filed separately, not claimed here.
+- **Precomputing a KV cache** buys query speed with **permanent resident
+  memory** (18GB vs 12GB in the CAG benchmark). Time is bought, not created.
+- **A stale cache with a long TTL** costs money and energy for content nobody
+  reads.
+- **Aggressive compression** can save tokens *and cost more*, once you count the
+  cache you invalidated and the re-fetching you caused — see
+  [Break-even](#%F0%9F%A7%AE-break-even).
+
+None of that weakens the case. It means the case has to be measured rather than
+asserted, which is the entire point of the grades below. **Every number in the
+table above is graded at its own entry** — the summary is a signpost, not a
+citation.
+
+### The scale it adds up to
+
+- Data centres used **448 TWh** in 2025 — more than all but ten countries — and
+  **AI is ~20% of that, projected to 40% by 2030**.
+- Inference can be up to **90% of a model's total lifecycle energy**. Training
+  is the headline; inference is the bill.
+- Response length is the most direct lever anyone outside a datacentre has, and
+  the one that requires no new hardware, no new model, and no new code.
+
+> **Money is the argument that gets a budget approved. Time is the argument that
+> gets a developer to adopt it. Energy is the argument that makes it worth
+> doing.** All three move for the same reason, which is why this list only
+> tracks one quantity.
+
+---
+
 ## Contents
 
+- [What you actually save](#what-you-actually-save) — money, time, and energy, from one lever
 - [How to read this](#how-to-read-this)
 - [Glossary](GLOSSARY.md) — every load-bearing term, defined once
-- [The three legs](#the-three-legs) — the frame everything else hangs on
-- [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
+- [The three legs](#the-three-legs) — the frame everything else hangs on- [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
 - [Evidence grades](#evidence-grades) — the one non-negotiable rule
 - [Leg 0 — Measure](#leg-0--measure) — you cannot cut what you cannot see
 - [Leg 1 — Input](#leg-1--input) — what you send
@@ -47,6 +109,7 @@ you're here:
 | **Argue with the premise** | [The three legs](#the-three-legs) → [What counts as bloat](#what-counts-as-bloat) → [Interaction matrix](#interaction-matrix) |
 | **Cut a bill this week** | [Leg 0](#leg-0--measure) (see the waste) → [Leg 1 · Budget](#%F0%9F%93%90-budget) and [Leg 2 · Audit](#%F0%9F%93%90-audit) (find the two invisible costs) → [Token ledger](#token-ledger) (don't trust the tool's homepage) |
 | **Build an agent** | [Effective context](#%F0%9F%93%8F-effective-context) → [Select](#%F0%9F%94%8E-select) → [Isolate](#%F0%9F%A7%B1-isolate) → [Reason less](#%F0%9F%A7%A0-reason-less) → [Laws](#laws) |
+| **Justify it upward** | [What you actually save](#what-you-actually-save) (money, time, energy) → [🧮 Break-even](#%F0%9F%A7%AE-break-even) (the arithmetic) → [Token ledger](#token-ledger) (the cautionary half) |
 | **Review a tool someone recommended** | [Evidence grades](#evidence-grades) → [Token ledger](#token-ledger) → [Anti-patterns](#anti-patterns) |
 
 Two conventions worth knowing before you start:
@@ -449,6 +512,7 @@ from the compression side.
 - **[Gemini context caching](https://ai.google.dev/gemini-api/docs/generate-content/caching)** — implicit (automatic on 2.5+, **no savings guarantee**) vs explicit (**guaranteed** 90% discount, TTL defaults to 1 hour). Minimums vary by model: 2,048 tokens on Gemini 2.5, 4,096 on the Gemini 3 family, 6,144 for some 3.x Flash. Two sharp edges: explicit caching bills **storage per hour per million tokens**, so a cache you never re-read is a pure loss; and the Interactions API supports implicit only. `[measured]`
 - **[Vertex AI context caching](https://cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview)** — 90% discount; implicit has **no cache-write surcharge** (tokens written are charged at standard input). Caches deleted within 24h, retention based on load and reuse frequency. `[measured]`
 - **[Gemini CLI token caching](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/token-caching.md)** — ⚠️ **caching requires API-key or Vertex auth. OAuth users get none**, because the Code Assist API doesn't support cached-content creation. If your team authenticates with a Google account you have no cache, and nothing in the product tells you. `/stats` shows the split. `[measured]`
+- **[Why caching is also an energy lever](https://arxiv.org/abs/2607.26571)** — inference energy decomposes into compute, parameter access, **KV-cache write, and attention read**. A prefix hit skips the KV work entirely, so the joules don't get spent either. Caching is the rare optimization that is unambiguously good on all three axes: cheaper, faster, and lower-energy, with no counter-lever. `[measured]`
 
 **Rules that matter more than the features:**
 1. Stable content first (system prompt → tool definitions → history), variable last.
@@ -481,8 +545,13 @@ Start here. Most of the output bill is invisible.
 - **[Thinking tokens are billed at the output rate](https://getnadir.com/blog/extended-thinking-tokens-output-billing)** — $25/M vs $5/M input on Opus-class. Worked example: 8,200 thinking tokens added **$0.205 to a $0.033 call — 7.2× total, identical visible response.** Most teams have never calculated reasoning overhead as a share of output spend. `[measured]`
 - **[The hidden cost of "cheap" AI](https://dev.to/max_quimby/the-hidden-cost-of-cheap-ai-why-budget-reasoning-models-actually-cost-6x-more-3e0)** — thinking tokens are **>80% of total output cost**. Removing them from the analysis raises the price↔actual-cost correlation from 0.563 to 0.873 and eliminates 70% of rank reversals. Gemini 3 Flash burned 208M thinking tokens on GPQA. *This is the single most important table in the output half.* `[measured]`
 - **[Brevity is the soul of sustainability (ACL 2025)](https://aclanthology.org/2025.findings-acl.1125/)** — the taxonomy everything else builds on: **MinAns** (minimal answer) vs **Irrel** (irrelevant, hallucinated, repeating). MINANS framing ≈ −60% output tokens, explicit length prediction −53%. Annotated dataset released. `[measured]`
+  🔋 **This is also the paper that priced output length in energy**: appropriate length-reduction prompts achieve **25–60% energy reduction with quality preserved**, and the six-category annotation shows the minimal answer is only **~42%** of a typical response. Its key structural finding explains the whole [pitch](#what-you-actually-save): *energy depends largely on output size, not on task complexity or type* — because output is generated sequentially and input is not. [Dataset + code](https://github.com/sohampoddar26/LLM-brevity).
 - **[Verbosity Compensation Behavior (UncertaiNLP 2025)](https://aclanthology.org/2025.uncertainlp-main.14/)** — models trained toward brevity get *worse* at concise answers. Distilling Mistral→GPT cut verbosity compensation from 63.81%→31.79% down to 16.60%. **Brevity can be a training artifact, not a prompt property.** `[measured]`
 - **[Computational Challenges in Token Economics](https://arxiv.org/pdf/2605.17410)** — treats tokens as economic primitives; frames the granularity / real-time / optimality tension. Good survey of the vocabulary. `[measured]`
+- **[Energy use of AI inference (Joule / Microsoft Research)](https://www.cell.com/joule/fulltext/S2542-4351%2826%2900114-5)** — the calibration for every energy claim: frontier-scale inference is a median of **0.31 Wh/query** (IQR 0.16–0.60), and widely-cited public estimates **overstate it by 4–20×** because they assume non-production deployments. The number that matters here: **reasoning queries (~5,000 output tokens) raise energy ~13×.** Also notes model, serving, and hardware gains could cut per-query energy **8–20×** — so this is a lever, not a constraint. `[measured]`
+- **[The Energy Cost of Reasoning](https://arxiv.org/pdf/2505.14733v2)** — direct measurement of test-time compute. Reasoning traces average **7,845 output tokens per query** and a ~258MB KV cache even at 7B. The result worth internalizing: going 1.5B → 7B *base* gives **+16.8% accuracy and −40.1% energy**, while adding reasoning traces to the 1.5B gives a similar **+17.3% accuracy for +57.4% energy**. Same accuracy, opposite energy sign — the lever is *how* you buy it. `[measured]`
+- **[Measuring Energy Consumption of LLM Inferences (SIGMETRICS)](https://dl.acm.org/doi/10.1145/3788882.3788890)** — independent measurement across transformer families up to DeepSeek V3/R1, consistent with the above. Use it to sanity-check any energy figure you're quoted. `[measured]`
+- **[From Tokens to Watt-hours](https://arxiv.org/abs/2607.26571)** — an analytical estimator that decomposes inference energy into compute, parameter access, **KV-cache write, and attention read**. That decomposition is why [caching](#%F0%9F%92%BE-cache) is an energy lever and not only a cost lever: the KV work you skip is work you don't pay for in joules either. `[measured]`
 
 ### 🎯 Budget
 
@@ -829,6 +898,7 @@ the durable part.
 20. **Never convert uncertain candidates into cleanup to hit a number.** This applies to PRs and to ledger entries alike.
 21. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
 22. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
+23. **One change, three budgets.** Money, wall-clock, and joules are all metered per token, so reducing tokens is the rare optimization with no trade-off face. When you find one that trades one budget for another — speculative decoding, precomputed KV — say which one you spent.
 
 ---
 
