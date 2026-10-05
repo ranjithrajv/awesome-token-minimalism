@@ -18,6 +18,7 @@ jobs:
           python .github/scripts/check_annotations.py README.md
           python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
           python .github/scripts/check_annotations.py RESOURCES.md
+          python .github/scripts/check_annotations.py TOKENMAXXING.md
 
   links:
     name: Link health
@@ -31,6 +32,7 @@ jobs:
         run: |
           python .github/scripts/check_annotations.py --urls README.md > /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls RESOURCES.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls TOKENMAXXING.md >> /tmp/urls.txt
           echo "$(wc -l < /tmp/urls.txt) links collected"
       - name: Check external links resolve
         run: |
