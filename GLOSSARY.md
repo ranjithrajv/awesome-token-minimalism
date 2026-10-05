@@ -71,6 +71,14 @@ distractors have non-uniform impact. The empirical basis for the whole Input
 leg.
 → [Chroma, 2025](https://research.trychroma.com/context-rot)
 
+**Cost per token** — The denominator this list deliberately ignores. Total spend
+is `tokens × cost-per-token`, and the two factors are independent: token
+minimalism reduces the first, hardware and runtime choice reduce the second. A
+CPU serves a token for less money and energy but more wall-clock; a GPU does the
+inverse. Because they multiply, the two disciplines compose rather than
+compete — 10× on each is 100× total. This list stays on the numerator.
+→ [awesome-cpu-first-ai](https://github.com/ranjithrajv/awesome-cpu-first-ai)
+
 **Distractor** — Irrelevant context included alongside relevant context. Not
 neutral padding: as input grows, distractors degrade performance *more*, and
 some distractors cost far more attention than others.

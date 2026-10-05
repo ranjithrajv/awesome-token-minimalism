@@ -55,6 +55,31 @@ asserted, which is the entire point of the grades below. **Every number in the
 table above is graded at its own entry** — the summary is a signpost, not a
 citation.
 
+### The other lever on the same bill
+
+Everything above reduces the **numerator**. There is a second factor:
+
+```
+total cost  =  tokens  ×  cost-per-token
+                 ↑             ↑
+          this repo     hardware and runtime
+```
+
+A 10× token cut and a 10× cut in cost-per-token compose to 100×. They are
+independent: you can be maximally token-efficient on a wasteful GPU cluster, and
+maximally token-wasteful on a CPU.
+
+The denominator is a different discipline with a different trade. Running
+inference on CPU rather than GPU buys money and energy **by spending latency** —
+it wins decisively at batch = 1 on idle hardware, and loses at sustained
+throughput, tight TTFT SLAs, and long-context prefill. Token minimalism is the
+rarer kind of optimization that saves all three at once.
+
+This list stays on the numerator deliberately. For the hardware half, including
+power-per-inference, PUE, water, and carbon by grid region, see
+[awesome-cpu-first-ai](https://github.com/ranjithrajv/awesome-cpu-first-ai) in
+[Related](#related).
+
 ### The scale it adds up to
 
 - Data centres used **448 TWh** in 2025 — more than all but ten countries — and
@@ -76,7 +101,8 @@ citation.
 - [What you actually save](#what-you-actually-save) — money, time, and energy, from one lever
 - [How to read this](#how-to-read-this)
 - [Glossary](GLOSSARY.md) — every load-bearing term, defined once
-- [The three legs](#the-three-legs) — the frame everything else hangs on- [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
+- [The three legs](#the-three-legs) — the frame everything else hangs on
+- [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
 - [Evidence grades](#evidence-grades) — the one non-negotiable rule
 - [Leg 0 — Measure](#leg-0--measure) — you cannot cut what you cannot see
 - [Leg 1 — Input](#leg-1--input) — what you send
@@ -1075,6 +1101,7 @@ Adjacent lists, linked rather than duplicated:
 - [library-skills](https://github.com/tiangolo/library-skills) — libraries ship their own version-locked `SKILL.md`, symlinked into `.agents/skills`. **Freshness as a token strategy:** you cannot compress your way out of stale knowledge, and pay-for-what-you-import means skills for libraries you don't depend on cost zero.
 - [llms.txt](https://llmstxt.org/) — the identifier-not-content pattern, generalized to the web.
 - [Awesome Context Engineering](https://github.com/jihoo-kim/awesome-context-engineering) · [decispherhq](https://decispherhq.github.io/awesome-context-engineering) — broader and capability-shaped. Good neighbors; this list is budget-shaped.
+- [awesome-cpu-first-ai](https://github.com/ranjithrajv/awesome-cpu-first-ai) — the **supply side of the same equation.** Where this list reduces the numerator (tokens spent), that one reduces the denominator (cost per token) by starting on CPU and requiring a GPU to be justified. Not a substitute — the two compose multiplicatively — and not a duplicate: it holds the hardware-side energy data this list defers to, including power-per-inference (Ampere Altra at **3.6× less power than an A10, 5.6× vs a T4** on Whisper), PUE arithmetic, WUE water analysis, carbon by grid region, and a runnable cost calculator. Note the trade it makes explicitly: **CPU-first buys money and energy by spending latency**, where token minimalism saves all three.
 
 ---
 
