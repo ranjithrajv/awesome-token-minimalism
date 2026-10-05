@@ -7,9 +7,9 @@ check it with.
 
 ## What this repo is
 
-An awesome list. Four files matter: `README.md`, `GLOSSARY.md`,
-`CONTRIBUTING.md`, and `.github/scripts/check_annotations.py`. Everything else
-is CI scaffolding.
+An awesome list. Five files matter: `README.md`, `GLOSSARY.md`,
+`RESOURCES.md`, `CONTRIBUTING.md`, and `.github/scripts/check_annotations.py`.
+Everything else is CI scaffolding.
 
 ## The one rule
 
@@ -30,6 +30,7 @@ Split verdicts use a compound tag: `[measured]/[asserted]`.
 ```sh
 python .github/scripts/check_annotations.py README.md                 # must print 0 problems
 python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
+python .github/scripts/check_annotations.py RESOURCES.md              # external-resource doc
 python .github/scripts/check_annotations.py --urls README.md          # link extraction
 ```
 

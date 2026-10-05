@@ -1,0 +1,22 @@
+[
+  {"id": "task-001", "prompt": "Summarize the following text in one sentence.", "text": "..."},
+  {"id": "task-002", "prompt": "Extract all email addresses from the following log.", "text": "..."},
+  {"id": "task-003", "prompt": "Classify the sentiment of this review.", "text": "..."},
+  {"id": "task-004", "prompt": "Translate the following paragraph to French.", "text": "..."},
+  {"id": "task-005", "prompt": "Write a Python function to compute fibonacci numbers.", "text": "..."},
+  {"id": "task-006", "prompt": "Explain the difference between TCP and UDP.", "text": "..."},
+  {"id": "task-007", "prompt": "Generate a SQL query to find duplicate rows.", "text": "..."},
+  {"id": "task-008", "prompt": "Refactor the following code to use list comprehension.", "text": "..."},
+  {"id": "task-009", "prompt": "Write a regex to match ISO 8601 dates.", "text": "..."},
+  {"id": "task-010", "prompt": "Summarize the plot of Hamlet in 50 words.", "text": "..."},
+  {"id": "task-011", "prompt": "Convert the following JSON to YAML.", "text": "..."},
+  {"id": "task-012", "prompt": "Write a bash script to find large files.", "text": "..."},
+  {"id": "task-013", "prompt": "Explain what a mutex is.", "text": "..."},
+  {"id": "task-014", "prompt": "Write a unit test for a stack data structure.", "text": "..."},
+  {"id": "task-015", "prompt": "Optimize the following SQL query.", "text": "..."},
+  {"id": "task-016", "prompt": "Write a function to check if a string is a palindrome.", "text": "..."},
+  {"id": "task-017", "prompt": "Explain the CAP theorem.", "text": "..."},
+  {"id": "task-018", "prompt": "Write a Dockerfile for a Node.js app.", "text": "..."},
+  {"id": "task-019", "prompt": "Implement binary search in Python.", "text": "..."},
+  {"id": "task-020", "prompt": "Write a function to merge two sorted lists.", "text": "..."}
+]

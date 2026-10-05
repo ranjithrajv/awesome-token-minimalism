@@ -1,0 +1,10 @@
+{
+  "model": "claude-sonnet-5",
+  "confidence": 0.95,
+  "seed": 42,
+  "metadata": {
+    "harness_version": "0.1.0",
+    "description": "Example paired A/B measurement"
+  },
+  "task_fn": "tasks.example:run_task"
+}

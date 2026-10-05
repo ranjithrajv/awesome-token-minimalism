@@ -1,0 +1,194 @@
+[
+  {
+    "id": "swebench-001",
+    "instance_id": "django__django-11099",
+    "repo": "django/django",
+    "prompt": "Fix the following Django issue:\n\nQuerySet.annotate() crashes when using Subquery with OuterRef on a related field.\n\nThe error is: AttributeError: 'Subquery' object has no attribute 'resolve_expression'\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-002",
+    "instance_id": "sympy__sympy-20590",
+    "repo": "sympy/sympy",
+    "prompt": "Fix the following SymPy issue:\n\nsympify() fails to convert AttributeError to SympifyError.\n\nThe fix should add AttributeError to the list of exceptions caught in sympify().\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-003",
+    "instance_id": "astropy__astropy-1234",
+    "repo": "astropy/astropy",
+    "prompt": "Fix the following Astropy issue:\n\nTable.read() fails for FITS files with zero-length columns.\n\nThe error is: ValueError: zero-size array to reduction operation minimum.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-004",
+    "instance_id": "scikit-learn__scikit-learn-2345",
+    "repo": "scikit-learn/scikit-learn",
+    "prompt": "Fix the following scikit-learn issue:\n\nPipeline.fit() fails when a transformer returns a sparse matrix and the next step expects dense.\n\nThe error is: ValueError: could not convert string to float.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-005",
+    "instance_id": "matplotlib__matplotlib-3456",
+    "repo": "matplotlib/matplotlib",
+    "prompt": "Fix the following Matplotlib issue:\n\nplt.savefig() produces corrupted PDF when using the PGF backend with certain fonts.\n\nThe error is: RuntimeError: LaTeX was not able to process the string.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-006",
+    "instance_id": "requests__requests-4567",
+    "repo": "psf/requests",
+    "prompt": "Fix the following Requests issue:\n\nSession.send() ignores the stream parameter when allow_redirects=True.\n\nThe error is: Response.content is empty when stream=True.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-007",
+    "instance_id": "flask__flask-5678",
+    "repo": "pallets/flask",
+    "prompt": "Fix the following Flask issue:\n\napp.route() with defaults raises KeyError when the endpoint is not found.\n\nThe error is: KeyError: 'endpoint'.\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-008",
+    "instance_id": "pandas__pandas-6789",
+    "repo": "pandas-dev/pandas",
+    "prompt": "Fix the following Pandas issue:\n\nDataFrame.groupby().agg() fails with categorical data and multiple aggregations.\n\nThe error is: TypeError: unhashable type: 'list'.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-009",
+    "instance_id": "numpy__numpy-7890",
+    "repo": "numpy/numpy",
+    "prompt": "Fix the following NumPy issue:\n\nnp.array() with dtype=object and nested lists produces inconsistent shapes.\n\nThe error is: ValueError: setting an array element with a sequence.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-010",
+    "instance_id": "pytest__pytest-8901",
+    "repo": "pytest-dev/pytest",
+    "prompt": "Fix the following pytest issue:\n\npytest.raises() with match= fails when the exception message contains regex special characters.\n\nThe error is: re.error: missing ), unterminated subpattern.\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-011",
+    "instance_id": "sphinx__sphinx-9012",
+    "repo": "sphinx-doc/sphinx",
+    "prompt": "Fix the following Sphinx issue:\n\nautodoc fails to document a class with a __init__ that has *args and **kwargs.\n\nThe error is: TypeError: __init__() takes 1 positional argument but 3 were given.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-012",
+    "instance_id": "tornado__tornado-0123",
+    "repo": "tornadoweb/tornado",
+    "prompt": "Fix the following Tornado issue:\n\nAsyncHTTPClient.fetch() hangs indefinitely when the server closes the connection without a response.\n\nThe error is: TimeoutError: Request timed out.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-013",
+    "instance_id": "django__django-12345",
+    "repo": "django/django",
+    "prompt": "Fix the following Django issue:\n\nModel.save() does not call full_clean() when called via bulk_create().\n\nThe error is: ValidationError is not raised for invalid data.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-014",
+    "instance_id": "sympy__sympy-23456",
+    "repo": "sympy/sympy",
+    "prompt": "Fix the following SymPy issue:\n\nsimplify() returns incorrect result for expressions with nested radicals.\n\nThe error is: AssertionError in test_simplify.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-015",
+    "instance_id": "astropy__astropy-2345",
+    "repo": "astropy/astropy",
+    "prompt": "Fix the following Astropy issue:\n\nCCDData.read() fails for FITS files with multiple HDUs.\n\nThe error is: IndexError: list index out of range.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-016",
+    "instance_id": "scikit-learn__scikit-learn-3456",
+    "repo": "scikit-learn/scikit-learn",
+    "prompt": "Fix the following scikit-learn issue:\n\nRandomForestClassifier.predict_proba() returns incorrect probabilities when class_weight='balanced'.\n\nThe error is: ValueError: probabilities do not sum to 1.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-017",
+    "instance_id": "matplotlib__matplotlib-4567",
+    "repo": "matplotlib/matplotlib",
+    "prompt": "Fix the following Matplotlib issue:\n\nplt.hist() with density=True and log=True produces incorrect bin heights.\n\nThe error is: ValueError: bins must be positive.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-018",
+    "instance_id": "requests__requests-5678",
+    "repo": "psf/requests",
+    "prompt": "Fix the following Requests issue:\n\nrequests.get() with verify=False does not suppress InsecureRequestWarning.\n\nThe error is: InsecureRequestWarning is still raised.\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-019",
+    "instance_id": "flask__flask-6789",
+    "repo": "pallets/flask",
+    "prompt": "Fix the following Flask issue:\n\nBlueprint.route() with url_prefix does not work with strict_slashes=False.\n\nThe error is: AssertionError: 404 Not Found.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-020",
+    "instance_id": "pandas__pandas-7890",
+    "repo": "pandas-dev/pandas",
+    "prompt": "Fix the following Pandas issue:\n\nDataFrame.merge() with how='outer' produces incorrect column order.\n\nThe error is: AssertionError in test_merge.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-021",
+    "instance_id": "numpy__numpy-8901",
+    "repo": "numpy/numpy",
+    "prompt": "Fix the following NumPy issue:\n\nnp.concatenate() with axis=None and mixed dimensions raises incorrect error.\n\nThe error is: ValueError: all the input array dimensions must match exactly.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-022",
+    "instance_id": "pytest__pytest-9012",
+    "repo": "pytest-dev/pytest",
+    "prompt": "Fix the following pytest issue:\n\npytest.fixture() with params and ids does not generate correct test IDs.\n\nThe error is: AssertionError in test collection.\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-023",
+    "instance_id": "sphinx__sphinx-0123",
+    "repo": "sphinx-doc/sphinx",
+    "prompt": "Fix the following Sphinx issue:\n\nsphinx-build with -W flag does not fail on duplicate labels.\n\nThe error is: no error raised.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-024",
+    "instance_id": "tornado__tornado-1234",
+    "repo": "tornadoweb/tornado",
+    "prompt": "Fix the following Tornado issue:\n\nWebSocketHandler.on_message() does not handle fragmented messages correctly.\n\nThe error is: WebSocketError: invalid frame.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  }
+]

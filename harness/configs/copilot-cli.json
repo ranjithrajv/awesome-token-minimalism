@@ -1,0 +1,11 @@
+{
+  "model": "copilot-cli",
+  "confidence": 0.95,
+  "seed": 42,
+  "metadata": {
+    "harness_version": "0.1.0",
+    "description": "Copilot CLI headless mode — measures full agent loop",
+    "executor": "copilot -p"
+  },
+  "task_fn": "tasks.copilot_cli:run_task"
+}

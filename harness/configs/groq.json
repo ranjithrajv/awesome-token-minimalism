@@ -1,0 +1,13 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "confidence": 0.95,
+  "seed": 42,
+  "metadata": {
+    "harness_version": "0.1.0",
+    "description": "Groq free tier — replacement for retired GitHub Models",
+    "provider": "groq",
+    "base_url": "https://api.groq.com/openai/v1",
+    "free_tier_limits": "30 req/min, 14,400 req/day"
+  },
+  "task_fn": "tasks.groq:run_task"
+}
