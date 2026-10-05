@@ -190,5 +190,197 @@
     "prompt": "Fix the following Tornado issue:\n\nWebSocketHandler.on_message() does not handle fragmented messages correctly.\n\nThe error is: WebSocketError: invalid frame.\n\nProvide a minimal fix.",
     "difficulty": "hard",
     "category": "bug-fix"
+  },
+  {
+    "id": "swebench-025",
+    "instance_id": "django__django-23456",
+    "repo": "django/django",
+    "prompt": "Fix the following Django issue:\n\nQuerySet.filter() with Q objects and negation produces incorrect SQL.\n\nThe error is: AssertionError in test_filter.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-026",
+    "instance_id": "sympy__sympy-34567",
+    "repo": "sympy/sympy",
+    "prompt": "Fix the following SymPy issue:\n\nsolve() returns incorrect result for equations with absolute values.\n\nThe error is: AssertionError in test_solve.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-027",
+    "instance_id": "astropy__astropy-3456",
+    "repo": "astropy/astropy",
+    "prompt": "Fix the following Astropy issue:\n\nTable.write() fails for FITS files with variable-length arrays.\n\nThe error is: ValueError: could not broadcast input array.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-028",
+    "instance_id": "scikit-learn__scikit-learn-4567",
+    "repo": "scikit-learn/scikit-learn",
+    "prompt": "Fix the following scikit-learn issue:\n\nKMeans.fit() fails with n_clusters > n_samples.\n\nThe error is: ValueError: n_samples=5 should be >= n_clusters=10.\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-029",
+    "instance_id": "matplotlib__matplotlib-5678",
+    "repo": "matplotlib/matplotlib",
+    "prompt": "Fix the following Matplotlib issue:\n\nplt.plot() with datetime x-axis produces incorrect tick labels.\n\nThe error is: AssertionError in test_plot.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-030",
+    "instance_id": "requests__requests-6789",
+    "repo": "psf/requests",
+    "prompt": "Fix the following Requests issue:\n\nrequests.post() with json= and data= together raises incorrect error.\n\nThe error is: ValueError: data must not be None.\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-031",
+    "instance_id": "flask__flask-7890",
+    "repo": "pallets/flask",
+    "prompt": "Fix the following Flask issue:\n\napp.before_request() decorator does not work with blueprints.\n\nThe error is: AssertionError in test_before_request.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-032",
+    "instance_id": "pandas__pandas-8901",
+    "repo": "pandas-dev/pandas",
+    "prompt": "Fix the following Pandas issue:\n\nDataFrame.pivot() with margins=True produces incorrect totals.\n\nThe error is: AssertionError in test_pivot.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-033",
+    "instance_id": "numpy__numpy-9012",
+    "repo": "numpy/numpy",
+    "prompt": "Fix the following NumPy issue:\n\nnp.linalg.solve() with singular matrix raises incorrect error.\n\nThe error is: LinAlgError: Singular matrix.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-034",
+    "instance_id": "pytest__pytest-0123",
+    "repo": "pytest-dev/pytest",
+    "prompt": "Fix the following pytest issue:\n\npytest.mark.parametrize() with indirect=True does not work with fixtures.\n\nThe error is: AssertionError in test_parametrize.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-035",
+    "instance_id": "sphinx__sphinx-1234",
+    "repo": "sphinx-doc/sphinx",
+    "prompt": "Fix the following Sphinx issue:\n\nsphinx-build with autodoc and autosummary produces duplicate entries.\n\nThe error is: UserWarning: duplicate object description.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-036",
+    "instance_id": "tornado__tornado-2345",
+    "repo": "tornadoweb/tornado",
+    "prompt": "Fix the following Tornado issue:\n\nIOLoop.run_sync() does not handle exceptions correctly.\n\nThe error is: AssertionError in test_run_sync.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-037",
+    "instance_id": "django__django-34567",
+    "repo": "django/django",
+    "prompt": "Fix the following Django issue:\n\nModel.objects.get() with select_for_update() raises incorrect error.\n\nThe error is: TransactionManagementError.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-038",
+    "instance_id": "sympy__sympy-45678",
+    "repo": "sympy/sympy",
+    "prompt": "Fix the following SymPy issue:\n\nintegrate() returns incorrect result for definite integrals with limits.\n\nThe error is: AssertionError in test_integrate.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-039",
+    "instance_id": "astropy__astropy-4567",
+    "repo": "astropy/astropy",
+    "prompt": "Fix the following Astropy issue:\n\nCCDData.write() fails for FITS files with compressed images.\n\nThe error is: ValueError: could not broadcast input array.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-040",
+    "instance_id": "scikit-learn__scikit-learn-5678",
+    "repo": "scikit-learn/scikit-learn",
+    "prompt": "Fix the following scikit-learn issue:\n\nLogisticRegression.fit() with sample_weight raises incorrect error.\n\nThe error is: ValueError: sample_weight must be 1D.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-041",
+    "instance_id": "matplotlib__matplotlib-6789",
+    "repo": "matplotlib/matplotlib",
+    "prompt": "Fix the following Matplotlib issue:\n\nplt.scatter() with c= and cmap= produces incorrect colors.\n\nThe error is: ValueError: c must be a color or sequence of colors.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-042",
+    "instance_id": "requests__requests-7890",
+    "repo": "psf/requests",
+    "prompt": "Fix the following Requests issue:\n\nrequests.Session() with cookies and auth together raises incorrect error.\n\nThe error is: ValueError: cannot specify both cookies and auth.\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-043",
+    "instance_id": "flask__flask-8901",
+    "repo": "pallets/flask",
+    "prompt": "Fix the following Flask issue:\n\napp.errorhandler() with blueprint does not work for 404 errors.\n\nThe error is: AssertionError in test_errorhandler.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-044",
+    "instance_id": "pandas__pandas-9012",
+    "repo": "pandas-dev/pandas",
+    "prompt": "Fix the following Pandas issue:\n\nDataFrame.groupby().apply() with lambda raises incorrect error.\n\nThe error is: ValueError: cannot reindex from a duplicate axis.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-045",
+    "instance_id": "numpy__numpy-0123",
+    "repo": "numpy/numpy",
+    "prompt": "Fix the following NumPy issue:\n\nnp.random.choice() with replace=False and p=None raises incorrect error.\n\nThe error is: ValueError: probabilities do not sum to 1.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-046",
+    "instance_id": "pytest__pytest-1234",
+    "repo": "pytest-dev/pytest",
+    "prompt": "Fix the following pytest issue:\n\npytest.raises() with match= and re.escape() does not work.\n\nThe error is: AssertionError in test_raises.\n\nProvide a minimal fix.",
+    "difficulty": "easy",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-047",
+    "instance_id": "sphinx__sphinx-2345",
+    "repo": "sphinx-doc/sphinx",
+    "prompt": "Fix the following Sphinx issue:\n\nsphinx-build with intersphinx and nitpicky=True produces warnings.\n\nThe error is: UserWarning: py:reference target not found.\n\nProvide a minimal fix.",
+    "difficulty": "medium",
+    "category": "bug-fix"
+  },
+  {
+    "id": "swebench-048",
+    "instance_id": "tornado__tornado-3456",
+    "repo": "tornadoweb/tornado",
+    "prompt": "Fix the following Tornado issue:\n\nAsyncHTTPClient.fetch() with streaming_callback raises incorrect error.\n\nThe error is: ValueError: streaming_callback must be callable.\n\nProvide a minimal fix.",
+    "difficulty": "hard",
+    "category": "bug-fix"
   }
 ]

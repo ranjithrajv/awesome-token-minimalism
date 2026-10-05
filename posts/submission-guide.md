@@ -8,7 +8,7 @@ Ready-to-publish content for Hacker News, X, and blog platforms.
 
 **Title:**
 ```
-Seven-word prompt beat two token-saving tools in a paired A/B test
+A seven-word prompt saves 418 tokens per call — but only 10 per agent session
 ```
 
 **URL:** (link to your blog post or GitHub repo)
@@ -16,21 +16,26 @@ Seven-word prompt beat two token-saving tools in a paired A/B test
 **Comment (post as a comment on your own submission, or use as the "Ask HN" text):**
 
 ```
-We put two popular token-saving tools (ponytail, caveman) through a paired A/B
-measurement — same tasks, same model, same Docker sandbox, real billed trials,
-significance tests. Then we added a third arm that cost nothing: a seven-word
-system prompt ("Follow YAGNI, prefer one-liners").
+We put three popular token-saving tools (ponytail, caveman, rtk) through a
+paired A/B measurement — same tasks, same model, same Docker sandbox, real
+billed trials, significance tests. Then we added a third arm that cost nothing:
+a seven-word system prompt ("Follow YAGNI, prefer one-liners").
 
 Results:
 - ponytail: −54% code, −20% cost (advertised) → −15.4% code, −10.3% cost (measured)
 - caveman: −65% output (advertised) → −8.5% (measured)
 - "Follow YAGNI": −33% code, −21% cost, −30% time — matched ponytail on cost and time
 
+We then ran the instruction through our own paired harness on 48 real GitHub
+issues (Groq): 418.25 output tokens saved per task (p=0.0001). Earlier pilots
+measured 522 on 12 tasks (p=0.0004) and 268.67 on 24 (p=0.053) — the smaller
+samples overstated the effect. The surface and the sample size both matter.
+
 We also ran the same tasks through GitHub Copilot CLI. A single "echo hello"
-task cost 17,549 tokens ($0.055). Tool schemas alone: 8,521 tokens — a
-permanent tax on every session. The capability is real. The question is whether
-loading all 23 eagerly is the only way to provide it. Route them on demand:
-capability preserved, cost removed.
+task cost 17,549 tokens ($0.055 at Sonnet-5 list rates as a proxy). Tool schemas
+alone: 8,521 tokens — a permanent tax on every session. The capability is real.
+The question is whether loading all 23 eagerly is the only way to provide it.
+Route them on demand: capability preserved, cost removed.
 
 The seven-word prompt was free, instant, and model-agnostic. It was also the
 only arm that wrote an unsafe function (dropped a path-traversal check once
@@ -81,15 +86,13 @@ The prompt matched ponytail on cost. For free.
 
 **Tweet 3.5:**
 ```
-We also ran the same tasks through GitHub Copilot CLI.
+We ran a paired A/B: 48 SWE-bench tasks through Groq, 12 through Copilot CLI.
 
-A single "echo hello" cost 17,549 tokens ($0.055).
+The 7-word prompt saves 418 output tokens per task on single API calls (p=0.0001).
 
-Tool schemas alone: 8,521 tokens — a permanent tax on every session.
+But only 9.58 on full agent sessions (p=0.52).
 
-The capability is real. The question is whether loading all 23 eagerly
-is the only way to provide it. Route them on demand: capability preserved,
-cost removed.
+The measurement surface matters.
 ```
 
 **Tweet 4:**

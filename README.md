@@ -14,36 +14,12 @@ the first. The bill for the third is the one nobody has instrumented.
 
 ---
 
-## TL;DR
-
-**Most token-savings claims fail independent measurement.** Of three popular
-tools put through one paired A/B harness, one delivered −8.5% against a −65%
-claim, one was *more expensive* than baseline, and one underdelivered on code
-size but did deliver on cost. A seven-word prompt — "Follow YAGNI, prefer
-one-liners" — matched the best tool on cost and time. Every entry in this list
-carries an evidence grade: `[measured]`, `[self-reported]`, `[asserted]`, or
-`[negative]`. Read the [token ledger](#token-ledger) before buying anything.
-
-**Measure it yourself:**
-- [`token-receipt`](https://github.com/ranjithrajv/token-receipt) — audit instruction files in any repo
-- [`token-harness`](harness/) — paired A/B measurement for token-saving tools
-- [`count_tokens.py`](.github/scripts/count_tokens.py) — this list meters its own prose; CI fails if it crosses budget
-
-**Copilot CLI baseline** (v1.0.83, `mai-code-1.1-flash`, task: "echo hello"):
-17,549 tokens ($0.055). The tool schemas alone are 8,521 tokens — a permanent
-tax on every session. The capability those schemas provide is real; the
-question is whether loading all 23 eagerly is the only way to provide it.
-Route them on demand and the capability is preserved, the cost is removed.
-See [harness/README.md](harness/README.md) for the full breakdown.
-
----
-
 ## Contents
 
-- [How to read this](#how-to-read-this) — five routes in, plus the two conventions worth knowing first
+- [How to read this](#how-to-read-this) — six routes in, plus the two conventions worth knowing first
 - [Glossary](GLOSSARY.md) — every load-bearing term, defined once
 - [Resources](RESOURCES.md) — external frameworks, essays, and analysis
-- [Tokenmaxxing](TOKENMAXXING.md) — the negative results, at fleet scale
+- [Token Maxxing](TOKENMAXXING.md) — the negative results, from fleet-scale bills to optimizers that cost more
 - [The case](#the-case) — money, time, energy, and why less bloat is *more* correct
   - [Four gains, one lever](#four-gains-one-lever) — the numbers
   - [Why one lever moves all four](#why-one-lever-moves-all-four) — the mechanism, and its escape hatch
@@ -72,20 +48,23 @@ See [harness/README.md](harness/README.md) for the full breakdown.
 - [Token ledger](#token-ledger) — advertised vs. measured
 - [Open problems](#open-problems) — nobody has measured these
 - [Anti-patterns](#anti-patterns) — defaults that shipped unmeasured
+- [Related](#related) — adjacent lists, and this repo's measurement layer
 - [Contributing](#contributing)
+- [Citation](#citation) — how to reference this list
+- [License](#license)
 
 ---
 
 ## How to read this
 
 This list is long because the topic has three independent failure modes and
-almost every tool addresses exactly one of them. Five routes, depending on why
+almost every tool addresses exactly one of them. Six routes, depending on why
 you're here:
 
 | If you want to… | Read |
 |---|---|
 | **Argue with the premise** | [The three legs](#the-three-legs) → [What counts as bloat](#what-counts-as-bloat) → [Interaction matrix](#interaction-matrix) |
-| **Cut a bill this week** | [Leg 0](#leg-0--measure) (see the waste) → [Leg 1 · Budget](#%F0%9F%93%90-budget) and [Leg 2 · Audit](#%F0%9F%93%90-audit) (find the two invisible costs) → [Token ledger](#token-ledger) (don't trust the tool's homepage) |
+| **Cut a bill this week** | [Leg 0](#leg-0--measure) (see the waste) → [Leg 1 · Cache](#%F0%9F%92%BE-cache) and [Leg 2 · Audit](#%F0%9F%93%90-audit) (find the two invisible costs) → [Token ledger](#token-ledger) (don't trust the tool's homepage) |
 | **Build an agent** | [Effective context](#%F0%9F%93%8F-effective-context) → [Select](#%F0%9F%94%8E-select) → [Isolate](#%F0%9F%A7%B1-isolate) → [Reason less](#%F0%9F%A7%A0-reason-less) → [Laws](#laws) |
 | **Make an agent more accurate** | [The accuracy gain](#the-accuracy-gain) → [Select](#%F0%9F%94%8E-select) (decision surface) → [Reason less](#%F0%9F%A7%A0-reason-less) (drift) → [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one) (delete without losing guards) |
 | **Justify it upward** | [The case](#the-case) (money, time, energy) → [🧮 Break-even](#%F0%9F%A7%AE-break-even) (the arithmetic) → [Token ledger](#token-ledger) (the cautionary half) |
@@ -94,10 +73,9 @@ you're here:
 Two conventions worth knowing before you start:
 
 - **Every entry carries an evidence grade.** `[measured]` means someone stated a
-  baseline and a method. **None of the four popular tools with independently
-  audited numbers hit their headline** — one was *more expensive* than doing
-  nothing. See [Token ledger](#token-ledger). The grade is the list, not the
-  commentary.
+  baseline and a method. **None of the three independently audited tools hit its
+  headline** — one was *more expensive* than doing nothing. See
+  [Token ledger](#token-ledger). The grade is the list, not the commentary.
 - **The enemy is bloat, never capability.** Every entry keeps the feature and
   removes an unmeasured cost. If a technique can't be written that way, it's in
   [Anti-patterns](#anti-patterns) instead.
@@ -183,8 +161,11 @@ power-per-inference, PUE, water, and carbon by grid region, see
 
 ### The scale it adds up to
 
-- Data centres used **448 TWh** in 2025 — more than all but ten countries — and
-  **AI is ~20% of that, projected to 40% by 2030**.
+- Data centres used **~485 TWh** in 2025 — up ~17% in a year — and the IEA
+  projects roughly **950 TWh by 2030**, with AI-focused data centres growing
+  faster still ([IEA, *Key Questions on Energy and AI*](https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary)). See
+  [Token Maxxing §13](TOKENMAXXING.md#13-the-meter-nobody-reads-energy-and-water)
+  for the fuller energy accounting.
 - Inference can be up to **90% of a model's total lifecycle energy**. Training
   is the headline; inference is the bill.
 - Response length is the most direct lever anyone outside a datacentre has, and
@@ -206,9 +187,9 @@ specific, testable way:
 
 #### Five mechanisms
 
-**1. Attention budget — fewer tokens means more attention per token.**
+**1. [Attention budget](GLOSSARY.md#attention-budget) — fewer tokens means more attention per token.**
 Every added token spends attention, useful or not, and irrelevant tokens spend
-it more aggressively as input grows. This is [context rot](#%F0%9F%93%8F-effective-context)
+it more aggressively as input grows. This is [context rot](GLOSSARY.md#context-rot)
 (18 models degraded) and [Lost in the Middle](https://aclanthology.org/2024.tacl-1.9/)
 (relevant information in the middle of a long context falls to *closed-book*
 accuracy). The cleanest experiment is LongMemEval's focused-versus-full arm:
@@ -290,7 +271,7 @@ context," not "less context"*:
 - **Aggressive compression loses information.** Compression that drops a file
   path causes re-fetching, and worse, wrong answers from an agent reasoning
   without the detail it needed. Optimize
-  [tokens-per-task](#token-ledger), not tokens-per-request.
+  [tokens-per-task](GLOSSARY.md#tokens-per-task), not tokens-per-request.
 - **Tight budgets backfire.** A 10-token reasoning budget produced **157**
   output tokens against 86 for a 50-token budget, plus >20% relative accuracy
   loss. Constraints that the model can't satisfy degrade output.
@@ -309,8 +290,9 @@ citation.
 ### The rule
 
 > [!IMPORTANT]
-> **Relevance density, not volume.** A smaller context that contains everything
-> that matters beats a larger one that contains it somewhere. Almost every
+> **[Relevance density](GLOSSARY.md#relevance-density), not volume.** A smaller
+> context that contains everything that matters beats a larger one that contains
+> it somewhere. Almost every
 > accuracy improvement in this list is a consequence of that single trade — and
 > almost every regression is a case where something that mattered got removed
 > along with something that didn't.
@@ -324,6 +306,8 @@ measurement is forgotten.
 > gets a developer to adopt it. Accuracy is the argument that should actually
 > persuade you. Energy is the argument that makes it worth doing.** All four move
 > for the same reason: they are all metered per token.
+
+[↑ Contents](#contents)
 
 ---
 
@@ -366,6 +350,8 @@ tokens are usually not broken out on any dashboard. See [Leg 2](#leg-2--output).
 Everything you emit becomes context that future sessions must read. The leg with
 the longest clock and the fewest tools. See [Leg 3](#leg-3--lifetime).
 
+[↑ Contents](#contents)
+
 ---
 
 ## What counts as bloat
@@ -403,6 +389,8 @@ The **same mechanism** produces bloat in three different places:
 That is why the [token ledger](#token-ledger) is part of this list, not an
 appendix to it.
 
+[↑ Contents](#contents)
+
 ---
 
 ## Evidence grades
@@ -418,12 +406,14 @@ Every entry carries one. It is the only editorial rule here that is not negotiab
 
 `[negative]` and `[asserted]` are not padding. They are the credibility
 mechanism, and they are the reason this list is worth reading: most token-savings
-marketing is `[asserted]`, and **none of the four popular tools that have been
-independently audited hit their claimed number** — one made the bill go *up*.
-See the [ledger](#token-ledger).
+marketing is `[asserted]`, and **none of the three independently audited tools
+hit its claimed number** — one made the bill go *up*. See the
+[ledger](#token-ledger).
 
 Where a result is model-, harness-, or date-specific, say so inline. These
 tools move weekly; an unstamped number is worthless within a month.
+
+[↑ Contents](#contents)
 
 ---
 
@@ -433,8 +423,9 @@ You cannot cut what you cannot see. Most teams have totals and no composition,
 which is why they cannot attribute cost or find the biggest lever.
 
 <details>
-<summary>9 tools — the profiler layer</summary>
+<summary>10 tools — the profiler layer</summary>
 
+- **[token-receipt](https://github.com/ranjithrajv/token-receipt)** — zero-dependency CLI that audits agent instruction files (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, etc.) and prints a token receipt. Uses `tiktoken` for exact counts. Detects duplication across files. `[measured]`
 - **[contextlens-profiler](https://pypi.org/project/contextlens-profiler/)** — `py-spy` for your prompt. Decomposes the window by region, shows re-billing across turns, names waste patterns (`stale tool result`, `unused tool schema`) with a dollar cost and a one-line fix each. `[measured]`
 - **[contextwatch](https://pypi.org/project/contextwatch/)** — per-turn token ledger; detects *server-side* compaction (`clear_tool_uses`, `compact`) that client-side hash diffing cannot see, because those never touch your messages list. Replay-probes pre/post compaction to score how much recall the compaction destroyed. `[self-reported]`
 - **[contextspy](https://github.com/RimantasZ/contextspy)** — wraps codex/copilot/opencode; splits input into 8 categories and diffs context between turns. `[self-reported]`
@@ -459,8 +450,9 @@ which is why they cannot attribute cost or find the biggest lever.
 ## Leg 1 — Input
 
 What you send. Ordered by how much it removes, cheapest first: the evidence
-that it should be less, then budget it, fetch less, structure it, shrink it,
-hide it from the model, delete it, and finally stop re-sending it.
+that it should be less, then budget it, fetch less, structure it, serialize
+media more cheaply, shrink it, hide it from the model, delete it, and finally
+stop re-sending it.
 
 ### 📏 Effective context
 
@@ -485,7 +477,7 @@ Allocate the window before you fill it. A cap set uniformly across heterogeneous
 work is itself bloat.
 
 - **[Anthropic: advanced tool use](https://www.anthropic.com/engineering/advanced-tool-use)** — explicit decision thresholds. Use Programmatic Tool Calling when tool definitions exceed 10k tokens, when tool-selection accuracy is a problem, or with 10+ tools. *Don't* when the library is under 10 tools, all are used every session, and schemas are compact. `[measured]`
-- **[ctxbudget CI gate](https://github.com/davidcjw/ctxbudget)** — `--fail-under 80` fails a build when context health drops. `[self-reported]`
+- **Budget as a build gate** — `ctxbudget --fail-under` fails the build when context health drops; the tool lives in [Leg 0](#leg-0--measure).
 - **[CLAUDE.md ≤ 3k tokens](https://github.com/JoeArmageddon/Claude-Master-Skill/blob/main/docs/token-budget.md)** — the 3,000-token / 40-instruction cap, and the finding behind it: adherence degrades past ~150–200 total instructions, *including the ones you care about*. Also: MCP server limit of 10. `[self-reported]`
 - **[< 100 lines of CLAUDE.md](https://gist.github.com/yurukusa/556f67c493a2729ce9b1703f5003a227)** — 50–100 lines is the balance; 200+ means split into `.claude/rules/`. Plus allowlist-over-blocklist and move-safety-rules-to-hooks. `[self-reported]`
 - **[TALE (ACL 2025)](https://aclanthology.org/2025.findings-acl.1274/)** — noted here only because the *technique* generalises: have the model **estimate its own budget before it spends it.** TALE applies it to reasoning tokens and gets −67%; the same estimate-then-constrain shape works for context. Its numbers live in [Leg 2 · Budget](#%F0%9F%8E%AF-budget). `[measured]`
@@ -760,15 +752,15 @@ to hold. A real architecture, not a micro-optimization.
 ## Leg 2 — Output
 
 What you get billed for, at 5–25× the input rate. Ordered the same way: audit
-the invisible spend, budget it, reason less about it, constrain its shape, write
-it cheaply, and cut it at the tool boundary.
+the invisible spend, budget it, reason less about it, constrain its shape, avoid
+generating it at all, write it cheaply, and cut it at the tool boundary.
 
 ### 📐 Audit
 
 Start here. Most of the output bill is invisible.
 
 <details>
-<summary>10 entries — make the invisible bill visible</summary>
+<summary>8 entries — make the invisible bill visible</summary>
 
 - **[Thinking tokens are billed at the output rate](https://getnadir.com/blog/extended-thinking-tokens-output-billing)** — $25/M vs $5/M input on Opus-class. Worked example: 8,200 thinking tokens added **$0.205 to a $0.033 call — 7.2× total, identical visible response.** Most teams have never calculated reasoning overhead as a share of output spend. `[measured]`
 - **[The hidden cost of "cheap" AI](https://dev.to/max_quimby/the-hidden-cost-of-cheap-ai-why-budget-reasoning-models-actually-cost-6x-more-3e0)** — thinking tokens are **>80% of total output cost**. Removing them from the analysis raises the price↔actual-cost correlation from 0.563 to 0.873 and eliminates 70% of rank reversals. Gemini 3 Flash burned 208M thinking tokens on GPQA. *This is the single most important table in the output half.* `[measured]`
@@ -779,7 +771,6 @@ Start here. Most of the output bill is invisible.
 - **[Energy use of AI inference (Joule / Microsoft Research)](https://www.cell.com/joule/fulltext/S2542-4351%2826%2900114-5)** — the calibration for every energy claim: frontier-scale inference is a median of **0.31 Wh/query** (IQR 0.16–0.60), and widely-cited public estimates **overstate it by 4–20×** because they assume non-production deployments. The number that matters here: **reasoning queries (~5,000 output tokens) raise energy ~13×.** Also notes model, serving, and hardware gains could cut per-query energy **8–20×** — so this is a lever, not a constraint. `[measured]`
 - **[The Energy Cost of Reasoning](https://arxiv.org/pdf/2505.14733v2)** — direct measurement of test-time compute. Reasoning traces average **7,845 output tokens per query** and a ~258MB KV cache even at 7B. The result worth internalizing: going 1.5B → 7B *base* gives **+16.8% accuracy and −40.1% energy**, while adding reasoning traces to the 1.5B gives a similar **+17.3% accuracy for +57.4% energy**. Same accuracy, opposite energy sign — the lever is *how* you buy it. `[measured]`
 - **[Measuring Energy Consumption of LLM Inferences (SIGMETRICS)](https://dl.acm.org/doi/10.1145/3788882.3788890)** — independent measurement across transformer families up to DeepSeek V3/R1, consistent with the above. Use it to sanity-check any energy figure you're quoted. `[measured]`
-- **[From Tokens to Watt-hours](https://arxiv.org/abs/2607.26571)** — an analytical estimator that decomposes inference energy into compute, parameter access, **KV-cache write, and attention read**. That decomposition is why [caching](#%F0%9F%92%BE-cache) is an energy lever and not only a cost lever: the KV work you skip is work you don't pay for in joules either. `[measured]`
 
 </details>
 
@@ -845,7 +836,7 @@ is explicit — they give up generation and multi-step reasoning entirely.
 **Two constraints that are pure token economics, inside a model that generates no tokens:**
 
 - **Candidate labels compete for a fixed token budget.** Laya splits input into an *option prompt budget* (`head_max_len`: 192 tokens English, 256 multilingual) and a document budget. At 77 options each label receives ~3–4 tokens and becomes indistinguishable — accuracy degrades in a documented way **above ~20 options**, with hierarchical routing as the prescribed fix. A token budget you have to spend wisely even without a decode loop.
-- **The answer space is defined before the call.** `choice` from ≤255, `score` on a 2–10 level rubric, `noul` as a probability. Score absolutely depends on how you shaped the question — there is no room to disambiguate afterward, which is the same [bounded-goal](README.md#leg-3--lifetime) discipline as a measured cleanup target.
+- **The answer space is defined before the call.** `choice` from ≤255, `score` on a 2–10 level rubric, `noul` as a probability. Score absolutely depends on how you shaped the question — there is no room to disambiguate afterward, which is the same [bounded-goal](GLOSSARY.md#bounded-goal) discipline as a measured cleanup target.
 
 > [!IMPORTANT]
 > **Do not claim an energy number for these.** Every energy figure in this
@@ -897,6 +888,62 @@ toward, and hold a retention bar so pruning doesn't eat your guards.
 ### ⬇️ Build less
 
 Prospective. Don't emit the artifact in the first place.
+
+> [!IMPORTANT]
+> **Reuse before you generate.** Before an agent writes a custom
+> implementation, it should walk this ladder — each rung down costs more output
+> tokens, more surface area, and more to maintain. Stop at the first rung that
+> fits:
+>
+> 1. **Don't build it at all** (YAGNI) — the cheapest feature is the one you
+>    drop. *Example: ship a JSON config file instead of a bespoke config DSL.*
+> 2. **Already in this codebase?** → reuse it, don't rewrite. Search for the
+>    symbol before authoring a second copy. *Example: the `format_date()` helper
+>    that already exists.*
+> 3. **Stdlib does it?** → use it. *Examples: Python `pathlib`, `datetime`,
+>    `functools.cache`, `sqlite3`; JS `Intl`, `URL`, `URLSearchParams`.*
+> 4. **Native platform feature?** → use it. *Examples: `crypto.randomUUID()`
+>    over a `uuid` dependency, `structuredClone()` over a deep-clone library,
+>    the `<dialog>` element over a modal dependency, CSS `:has()` over JS.*
+> 5. **Installed dependency?** → use it. The package is already pinned in the
+>    lockfile; load its docs or skill instead of re-deriving its API. *Examples:
+>    the `httpx`/`requests` client already in the tree, the `pydantic`/`zod`
+>    validation you already ship.*
+> 6. **Add a dependency** — only after the rungs above miss.
+> 7. **Custom code** — the last rung, not the default.
+>
+> `[asserted]` as a general rule: the ordering is a heuristic and no per-rung
+> token delta has been measured — but rungs 2–5 replace generated output with
+> context that already exists, and rung 1 removes the output entirely.
+
+> [!TIP]
+> **Load the installed library; don't regenerate it.** The cheapest code is the
+> code an agent doesn't write. Asked to add a feature, a model reconstructs the
+> dependency's API from training data older than the lockfile — output tokens
+> now, a committed artifact every future session pays for, and a real chance the
+> pattern it emits is deprecated or invented. The concept that fixes it: feed the
+> agent the **installed version's own machine-readable context** — its docs or
+> its skill — discovered from the dependency graph and loaded on demand, instead
+> of asking the model to remember an approximation. Three products implement it,
+> at different layers:
+>
+> - **[library-skills.io](https://library-skills.io/)** — package-embedded and
+>   version-locked: libraries ship their own `SKILL.md`, and
+>   `uvx library-skills` / `npx library-skills` scans the lockfile and symlinks it
+>   into `.agents/skills`, so the skill moves when the dependency does.
+> - **[Context7](https://github.com/upstash/context7)** — fetched on demand and
+>   version-matched: an MCP server or CLI-installed skill that pulls the exact
+>   library version's documentation into the prompt, so the agent reads current
+>   APIs instead of recalling them.
+> - **[llms.txt](https://llmstxt.org/)** — publisher-side: the library exposes a
+>   machine-readable docs index at the source, so the agent reads the map rather
+>   than reconstructing one.
+>
+> **Additive clause:** the capability is preserved and *current*; what's removed
+> is the output spent re-emitting a library you already depend on, plus the
+> rework and lifetime maintenance that stale patterns leave behind. `[asserted]`
+> on the concept — the mechanism is structural (the context tracks the lockfile
+> or the published version), but no paired A/B token delta has been published.
 
 - **[ponytail](https://github.com/DietrichGebert/ponytail)** — "the laziest senior dev." `<input type="date">` instead of a library install plus wrapper component. ⚠️ **Advertised −54% code / −20% cost; independently measured −15.4% code (p=0.088) and −10.3% cost (p=0.004).** Credit where due: they found and documented a **contamination bug in their own harness** (a SessionStart hook firing in the baseline), rebuilt against headless Claude Code on a real repo, and published the smaller number. Model-dependence caveat: works on Claude-class, transfers poorly to small local models. `[measured]/[self-reported]` — audit is measured, the remaining benchmarks are the authors' own
 - **"Follow YAGNI, prefer one-liners"** — a **seven-word prompt** measured −33% code, −21% cost, −30% time against the same baseline, matching ponytail on cost and time. It was also the only arm that wrote an unsafe function (dropped a path-traversal check once in four runs). **The cheapest intervention is often a sentence** — and the cheapest intervention is not always the safest one. `[measured]`
@@ -987,6 +1034,8 @@ Anything that only moves the third column is `⚡ serve-side`.
 - **[smolagents](https://github.com/huggingface/smolagents)** — agent logic in <1,000 lines, and CodeAct-style code-as-action uses **30% fewer steps**. Fewer *calls* is a latency win, not a token win. `[measured]`
 - **[Cognition: context caps](https://cognition.com/blog/dont-build-multi-agents)** — enabled the 1M-token beta while capping actual usage at 200k. Environment design: give the model the experience of ample runway without changing the effective working set. `[self-reported]`
 
+[↑ Contents](#contents)
+
 ---
 
 ## Interaction matrix
@@ -1025,6 +1074,8 @@ flowchart TD
 > technique invites the failure the repo exists to catch. Flagged, not resolved.
 > The graph rows have the same shape: the cheapest representation at query time
 > can be the most expensive one to build.
+
+[↑ Contents](#contents)
 
 ---
 
@@ -1169,6 +1220,8 @@ the durable part.
 > your output-to-input ratio `r`. Instrument both before optimizing anything
 > else in this list.
 
+[↑ Contents](#contents)
+
 ---
 
 ## Laws
@@ -1206,6 +1259,8 @@ the durable part.
 23. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
 24. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
 25. **One change, three budgets.** Money, wall-clock, and joules are all metered per token, so reducing tokens is the rare optimization with no trade-off face. When you find one that trades one budget for another — speculative decoding, precomputed KV — say which one you spent.
+
+[↑ Contents](#contents)
 
 ---
 
@@ -1249,6 +1304,10 @@ Head-to-head against ponytail's own rebuilt benchmark
 | `caveman` | −20% | **+7%** | **+3%** | +2% | 100% |
 | *"Follow YAGNI, prefer one-liners"* (7 words) | −33% | −14% | −21% | −30% | **95%** |
 
+The two `caveman` measurements use different harnesses and metrics — the ledger
+above is the JetBrains paired A/B, this table is curviate's rebuilt SkillsBench
+run — so they should not be read as contradicting each other.
+
 **Three separate tools, one harness, two of three failed to deliver** — and one
 was *more expensive*. That is not an anecdote; that's a reproducible pattern.
 
@@ -1267,6 +1326,8 @@ n: 80 paired · p=0.004 · quality: 65/80 identical
 ```
 
 Anything without a stamp is `[self-reported]`, however large the number.
+
+[↑ Contents](#contents)
 
 ---
 
@@ -1289,8 +1350,9 @@ Real gaps. Nobody has measured these.
 4. **What is the *correct* unit for compression loss?** tokens-per-task is
    better than tokens-per-request, but it requires knowing the re-fetch rate,
    which is unmeasured almost everywhere.
-5. **Nobody has an independently audited context-window profiler.** Every tool
-   in [Leg 0](#leg-0--measure) is `[self-reported]`.
+5. **Nobody has an independently audited context-window profiler.** Most of
+   [Leg 0](#leg-0--measure) is `[self-reported]`; the `[measured]` entries there
+   audit instruction files and bills, not per-turn context composition.
 6. **Is per-model brevity tuning worth it?** Verbosity compensation suggests
    conciseness is model-specific. Whether one ruleset can serve three model
    families, or needs to be three rulesets, is unmeasured.
@@ -1339,11 +1401,15 @@ Real gaps. Nobody has measured these.
 
 </details>
 
+[↑ Contents](#contents)
+
 ---
 
 ## Anti-patterns
 
-Each one names a **default that shipped unmeasured**, with a receipt.
+Each one names a **default that shipped unmeasured**, with a receipt. The same
+defaults appear as graded cases in [Token Maxxing](TOKENMAXXING.md#the-cases);
+this section is the index, that one the catalog.
 
 <details>
 <summary>19 defaults that shipped unmeasured</summary>
@@ -1431,14 +1497,15 @@ Adjacent lists, linked rather than duplicated:
 
 - [Glossary](GLOSSARY.md) — every load-bearing term in this list, defined once with the number that makes it matter.
 - [Resources](RESOURCES.md) — external frameworks, essays, and analysis about token minimalism.
-- [Token maxxing](TOKENMAXXING.md) — the anti-pattern catalog: cited blow-ups, from fleet-scale bills to optimizers that cost more.
+- [Token Maxxing](TOKENMAXXING.md) — the negative-result catalog: cited blow-ups, from fleet-scale bills to optimizers that cost more.
 - [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers) — the catalogs. Check your schema cost before connecting one.
 - [agentskills.io](https://agentskills.io/) · [spec](https://agentskills.io/specification) — three-tier progressive disclosure: ~100 tokens of catalog per skill, <5k instructions on activation, unlimited resources on access.
 - [AGENTS.md](https://agents.md/) — nested-scoped instructions, 60k+ projects, stewarded by the Agentic AI Foundation under the Linux Foundation.
-- [library-skills](https://github.com/tiangolo/library-skills) — libraries ship their own version-locked `SKILL.md`, symlinked into `.agents/skills`. **Freshness as a token strategy:** you cannot compress your way out of stale knowledge, and pay-for-what-you-import means skills for libraries you don't depend on cost zero.
+- [library-skills.io](https://library-skills.io/) · [source](https://github.com/tiangolo/library-skills) — libraries ship their own version-locked `SKILL.md`, symlinked into `.agents/skills` via `uvx`/`npx library-skills`. **Load the installed library; don't regenerate it.** Freshness as a token strategy: you cannot compress your way out of stale knowledge, and pay-for-what-you-import keeps skills for libraries you don't depend on at zero cost.
 - [llms.txt](https://llmstxt.org/) — the identifier-not-content pattern, generalized to the web.
 - [Awesome Context Engineering](https://github.com/jihoo-kim/awesome-context-engineering) · [decispherhq](https://decispherhq.github.io/awesome-context-engineering) — broader and capability-shaped. Good neighbors; this list is budget-shaped.
 - [awesome-cpu-first-ai](https://github.com/ranjithrajv/awesome-cpu-first-ai) — the **supply side of the same equation.** Where this list reduces the numerator (tokens spent), that one reduces the denominator (cost per token) by starting on CPU and requiring a GPU to be justified. Not a substitute — the two compose multiplicatively — and not a duplicate: it holds the hardware-side energy data this list defers to, including power-per-inference (Ampere Altra at **3.6× less power than an A10, 5.6× vs a T4** on Whisper), PUE arithmetic, WUE water analysis, carbon by grid region, and a runnable cost calculator. Note the trade it makes explicitly: **CPU-first buys money and energy by spending latency**, where token minimalism saves all three.
+- [harness/](harness/) · [posts/](posts/) — this repo's own measurement layer: the paired A/B rig ([design](harness/README.md), [leaderboard](harness/LEADERBOARD.md)) and the [result writeups](posts/harness-results.md). Run a tool through it and publish the number.
 
 ---
 
@@ -1457,6 +1524,25 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). The short version:
    the cost." If you can't write one, it belongs in [Anti-patterns](#anti-patterns).
 5. **Negative results are the most valuable contributions here.** If you measured
    something that didn't work, that's a first-class entry.
+
+---
+
+## Citation
+
+Machine-readable metadata lives in [`CITATION.cff`](CITATION.cff): GitHub reads
+it and renders a **Cite this repository** button with APA and BibTeX exports. If
+you reference the list in a paper, cite the project and pin the snapshot you
+used — the token ledger and grades move over time.
+
+```bibtex
+@misc{raj_awesome_token_minimalism,
+  author       = {Raj, Ranjith},
+  title        = {Awesome Token Minimalism},
+  year         = {2026},
+  howpublished = {\url{https://github.com/ranjithrajv/awesome-token-minimalism}},
+  note         = {Evidence-graded catalogue. Accessed <date> at commit <sha>.}
+}
+```
 
 ---
 

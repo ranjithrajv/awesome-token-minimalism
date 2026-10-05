@@ -18,11 +18,23 @@ We put two popular token-saving tools through a paired A/B measurement — same 
 
 ## The results
 
-| Arm | Code | Tokens | Cost | Time | Safe |
+Two studies, two answers. On the tools' own rebuilt benchmark (curviate), the
+seven-word prompt matched ponytail on cost and time:
+
+| Arm (rebuilt benchmark) | Code | Tokens | Cost | Time | Safe |
 |---|---|---|---|---|---|
 | `ponytail` | −54% | −22% | −20% | −27% | 100% |
 | `caveman` | −20% | **+7%** | **+3%** | +2% | 100% |
 | *"Follow YAGNI, prefer one-liners"* | −33% | −14% | −21% | −30% | 95% |
+
+Under the independent paired A/B (JetBrains, Claude Code, `claude-sonnet-5`,
+n=80, 2026-07), none of the three audited tools hit its headline:
+
+| Tool | Advertised | Measured |
+|---|---|---|
+| `ponytail` | −54% code | −15.4% code (p=0.088), −10.3% cost (p=0.004) |
+| `caveman` | −65% output | −8.5% output (p=0.82) |
+| `rtk` | −60…90% | **+7.6% cost** at low effort (p=0.004) |
 
 The seven-word prompt **matched ponytail on cost and time** while being free, instant, and model-agnostic. It was also the only arm that wrote an unsafe function — it dropped a path-traversal check once in four runs.
 
@@ -49,7 +61,10 @@ quality: 65/80 identical outputs
 significance: paired t-test, p < 0.05
 ```
 
-Every number has a baseline, a method, and a stamp. Anything without one is `[self-reported]`, however large the number.
+The independent paired A/B is the block above; the rebuilt-benchmark table is
+those tools' own harness and is graded `[self-reported]` in the list. Every
+number here has a baseline, a method, and a stamp; anything without one is
+`[self-reported]`, however large the number.
 
 ## The takeaway
 

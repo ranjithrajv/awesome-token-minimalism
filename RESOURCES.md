@@ -6,7 +6,28 @@ the [awesome list](README.md): if it is something you install, run, or measure,
 it belongs in the README. If it is something you read to understand *why* the
 list takes the position it does, it belongs here.
 
-Part of [Awesome Token Minimalism](README.md).
+Part of [Awesome Token Minimalism](README.md). For the same blow-ups turned
+into numbers — root causes, the seven ledgers, and a wider graded inventory —
+see [Token Maxxing](TOKENMAXXING.md).
+
+---
+
+## How to read this doc
+
+- **Grades mean what they mean in the list.** `[measured]`, `[self-reported]`,
+  `[asserted]`, `[negative]` — see [Evidence grades](README.md#evidence-grades).
+  Nothing here is `[measured]` against this repo's own harness; it is reading
+  material, and the grade says how much weight the source can bear.
+- **Reference entries are lookup aids, not claims.** The prices/token-counting
+  and benchmark sections carry grades for source trustworthiness, not for any
+  savings they assert. Re-derive the constants; do not quote them as results.
+- **Link the primary source, not the listicle.** "10 Best LLM Observability
+  Tools" roundups are marketing-shaped and are deliberately absent. If a source's
+  only claim is a ranking, it does not belong here.
+- **Vendor studies stay `[self-reported]` however large.** Faros and Jellyfish
+  have real datasets; neither states a baseline a reader could re-run.
+- **News decays.** Industry-coverage entries carry their month in the
+  description. Treat them as snapshots of a moment, not standing facts.
 
 ---
 
@@ -101,10 +122,12 @@ The demand-side context: why "use fewer tokens" moved from philosophy to
 survival. Snapshot material — each item is stamped by its moment, and a
 "3× over budget" anecdote is evidence of a period, not a law.
 
-- **[TechCrunch — The token bill comes due](https://techcrunch.com/2026/06/05/the-token-bill-comes-due-inside-the-industry-scramble-to-manage-ais-runaway-costs/)** — the origin piece: Uber exhausts its annual Claude Code budget in four months, the FinOps Foundation reports companies 3× over their 2026 token budget by April, and Datadog/New Relic bolt on token-level observability. The framing that matters: per-token prices were *falling* while total bills rose. `[asserted]`
-- **[Business Insider — Uber's COO on AI token spend](https://www.businessinsider.com/uber-coo-andrew-macdonald-ai-token-spending-harder-justify-2026-5)** — Andrew Macdonald on finding no demonstrable link between token spend and shipped features. The demand-side reason tokenmaxxing ended. `[asserted]`
-- **[Faros AI — AI acceleration whiplash](https://www.faros.ai/blog/ai-acceleration-whiplash-takeaways)** — a two-year study of 20,000 developers: output rose, and so did bugs and rewrites. Vendor-published, baseline unstated. `[self-reported]`
-- **[Jellyfish — Is "tokenmaxxing" cost effective?](https://jellyfish.co/blog/is-tokenmaxxing-cost-effective-new-data-from-jellyfish-explains)** — the top 10% of Claude Code users spend roughly **10× the tokens for ~2× the output**. Vendor-published from a very large dataset (275k+ engineers), baseline unstated; the diminishing-returns curve is the useful part, not the absolute numbers. `[self-reported]`
+These stories are the same sources graded, with their numbers, in
+[Token Maxxing §1](TOKENMAXXING.md#1-fleet-scale-the-bill-with-no-ceiling):
+TechCrunch's origin piece, Business Insider on Uber's COO, Faros AI's
+acceleration-whiplash study, and Jellyfish's diminishing-returns data. The
+catalog owns the evidence; this doc points to it rather than restating it, so a
+number lives in exactly one place.
 
 ## Newsletters & people to follow
 
@@ -113,22 +136,3 @@ change quarterly — and these are the places that track it as it happens.
 
 - **[Simon Willison's Weblog](https://simonwillison.net)** — continuous, hands-on notes on model releases, pricing, and long-context behavior, usually within hours. His `llm-pricing` tag is effectively the changelog behind [llm-prices.com](https://llm-prices.com). `[self-reported]`
 - **[Latent Space](https://www.latent.space)** — AI-engineer podcast and newsletter. Covers context engineering, agent-harness design, and cost-relevant releases and benchmarks as they land. `[asserted]`
-
----
-
-## How to read this doc
-
-- **Grades mean what they mean in the list.** `[measured]`, `[self-reported]`,
-  `[asserted]`, `[negative]` — see [Evidence grades](README.md#evidence-grades).
-  Nothing here is `[measured]` against this repo's own harness; it is reading
-  material, and the grade says how much weight the source can bear.
-- **Reference entries are lookup aids, not claims.** The price, tokenizer, and
-  benchmark sections carry grades for source trustworthiness, not for any
-  savings they assert. Re-derive the constants; do not quote them as results.
-- **Link the primary source, not the listicle.** "10 Best LLM Observability
-  Tools" roundups are marketing-shaped and are deliberately absent. If a source's
-  only claim is a ranking, it does not belong here.
-- **Vendor studies stay `[self-reported]` however large.** Faros and Jellyfish
-  have real datasets; neither states a baseline a reader could re-run.
-- **News decays.** Industry-coverage entries carry their month in the
-  description. Treat them as snapshots of a moment, not standing facts.

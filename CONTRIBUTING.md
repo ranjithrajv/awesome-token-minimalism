@@ -125,7 +125,7 @@ about a number. That is the register.
 ## Open problems
 
 The list has a standing [Open problems](README.md#open-problems) section with
-seven questions nobody has answered. If you can answer one — even partially — that
+fourteen questions nobody has answered. If you can answer one — even partially — that
 outranks any number you could add to an existing section. Two worth calling out:
 
 - **Where does a retention bar stop being worth its tokens?** It's prose in a
@@ -167,16 +167,22 @@ before those checks existed; if one flags you, fix the anchor, not the check.
 ```sh
 python .github/scripts/check_annotations.py README.md                 # grades + anchors
 python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
+python .github/scripts/check_annotations.py RESOURCES.md
+python .github/scripts/check_annotations.py TOKENMAXXING.md
 python .github/scripts/check_annotations.py --urls README.md          # link health
 ```
 
-### Two files, two formats
+### Which file, which format
 
 - **`README.md`** is the list. Every bullet beginning `- **[` needs a grade on
   its first line.
+- **`TOKENMAXXING.md`** is the negative-result catalog — the blow-ups, with
+  their numbers — graded the same way.
 - **`GLOSSARY.md`** is definitions, and carries no grades. It is checked for
   anchors only. Add a term when a contributor reasonably asks what it means —
   the test is whether the README uses it as if it were obvious.
+- **`RESOURCES.md`** is reading material, not entries. Its grades describe how
+  much weight a source can bear, not a savings claim.
 
 ## License
 

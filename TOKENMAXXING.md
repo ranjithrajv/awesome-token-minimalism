@@ -155,8 +155,9 @@ once:
 ## The cases
 
 Grouped by the failure mode each illustrates. Some entries are re-cut from the
-[list](README.md); the canonical numbers live there, and this is the
-organizational lens.
+[list](README.md), and some numbers exist only here; where the same source
+appears in both, it carries the same grade and the fuller framing lives in the
+README. This is the organizational lens.
 
 ### 1. Fleet scale: the bill with no ceiling
 
@@ -404,3 +405,6 @@ Every failure above reduces to two numbers and a receipt:
 - [Interaction matrix](README.md#interaction-matrix) — where the levers fight each other
 - [Open problems](README.md#open-problems) — what nobody has measured yet
 - [Resources](RESOURCES.md) — the primary sources behind the catalog
+- [Glossary](GLOSSARY.md) — the terms this catalog assumes
+- [Contributing](CONTRIBUTING.md) — the grade vocabulary and the additive clause
+- [harness/](harness/) — the paired A/B rig that turns a claim into a number

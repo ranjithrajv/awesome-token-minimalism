@@ -57,6 +57,10 @@ The CLI outputs newline-delimited JSON events. The executor parses:
 }
 ```
 
+`sessionDurationMs` is illustrative (one session); the published baseline
+reports 8.4s for a different run. The executor computes cost at Claude Sonnet-5
+list rates as a proxy, because `mai-code-1.1-flash` rates are not published.
+
 ## Fields the executor depends on
 
 | Field path | Used for | Breakage risk |
@@ -75,7 +79,8 @@ The CLI outputs newline-delimited JSON events. The executor parses:
 If the format changes:
 
 1. **Detect**: The parser returns `tokens_in: 0` when `prompt_tokens` is missing.
-2. **Alert**: The harness run fails loudly with a parse error.
+2. **Alert**: A zero `tokens_in` yields `quality_score = 0.0`; the runner must
+   treat a zero-quality arm as invalid, not as a measured zero.
 3. **Fallback**: Use `tasks/example.py` (direct Anthropic API) which has a stable, documented response format.
 4. **Fix**: Update `_parse_copilot_output()` in `tasks/copilot_cli.py`.
 

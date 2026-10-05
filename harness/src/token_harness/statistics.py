@@ -14,6 +14,22 @@ import numpy as np
 from scipy import stats
 
 
+def count_tokens(text: str, model: str = "cl100k_base") -> int:
+    """Count tokens using tiktoken (exact, no approximation).
+
+    Args:
+        text: The text to tokenize.
+        model: The tokenizer to use. Default is cl100k_base (GPT-4).
+
+    Returns:
+        Exact token count.
+    """
+    import tiktoken
+
+    encoding = tiktoken.get_encoding(model)
+    return len(encoding.encode(text))
+
+
 @dataclass(frozen=True)
 class PairedResult:
     """Result of a paired A/B comparison."""

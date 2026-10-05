@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: >-
+  If you use this list or its measurement harness in your work, please cite it
+  using the metadata below. To cite a specific snapshot, include the commit hash
+  or release tag you accessed.
+title: Awesome Token Minimalism
+abstract: >-
+  An evidence-graded, continuously updated catalogue of papers, tools, and
+  patterns for spending fewer tokens on all three sides of an LLM call — input,
+  output, and lifetime — in service of lower cost, latency, energy, and higher
+  accuracy. Every entry carries an evidence grade: [measured], [self-reported],
+  [asserted], or [negative]. The repository also ships a paired A/B measurement
+  harness and a token ledger comparing advertised savings against independently
+  measured ones.
+type: dataset
+authors:
+  - given-names: Ranjith
+    family-names: Raj
+    alias: ranjithrajv
+    email: ranjithraj@riseup.net
+    website: https://github.com/ranjithrajv
+repository-code: https://github.com/ranjithrajv/awesome-token-minimalism
+url: https://github.com/ranjithrajv/awesome-token-minimalism
+license: CC0-1.0
+date-released: "2026-10-05"
+keywords:
+  - token minimalism
+  - token efficiency
+  - context engineering
+  - prompt compression
+  - LLM inference cost
+  - inference energy
+  - evidence grading
+  - awesome list
+  - large language models

@@ -1,15 +1,17 @@
 # AGENTS.md
 
 Agent instructions for this repository. Deliberately short — this repo's own
-[Leg 1 law](README.md#laws) says instruction files are a per-turn tax, and the
-`ctxbudget` measurement in [Leg 0](README.md#leg-0--measure) is the tool to
-check it with.
+[duplicated-instruction-file anti-pattern](README.md#anti-patterns) treats
+`AGENTS.md`/`CLAUDE.md` rules as a per-turn tax, and the profilers in
+[Leg 0](README.md#leg-0--measure) are how you check it.
 
 ## What this repo is
 
-An awesome list. Six files matter: `README.md`, `TOKENMAXXING.md`,
-`GLOSSARY.md`, `RESOURCES.md`, `CONTRIBUTING.md`, and
-`.github/scripts/check_annotations.py`. Everything else is CI scaffolding.
+An awesome list plus its own measurement layer. The content docs are
+`README.md`, `TOKENMAXXING.md`, `GLOSSARY.md`, `RESOURCES.md`, and
+`CONTRIBUTING.md`; `harness/` and `posts/` hold the paired A/B rig and its
+result writeups; `.github/scripts/check_annotations.py` is the CI gate. The rest
+is scaffolding and metadata (`CITATION.cff`, `LICENSE`).
 
 ## The one rule
 
@@ -31,7 +33,7 @@ Split verdicts use a compound tag: `[measured]/[asserted]`.
 python .github/scripts/check_annotations.py README.md                 # must print 0 problems
 python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
 python .github/scripts/check_annotations.py RESOURCES.md              # external-resource doc
-python .github/scripts/check_annotations.py TOKENMAXXING.md           # anti-pattern catalog
+python .github/scripts/check_annotations.py TOKENMAXXING.md           # negative-result catalog
 python .github/scripts/check_annotations.py --urls README.md          # link extraction
 ```
 
