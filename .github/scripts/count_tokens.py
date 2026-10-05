@@ -22,7 +22,7 @@ import sys
 
 # The prose an agent (or a reader) pays for. Code, tests, and CI are excluded:
 # they run, they are not loaded into a context window on every turn.
-FILES = ("README.md", "TOKENMAXXING.md", "TOKENMAXXING-ANALYSIS.md", "GLOSSARY.md", "RESOURCES.md", "CONTRIBUTING.md", "AGENTS.md")
+FILES = ("README.md", "TOKENMAXXING.md", "GLOSSARY.md", "RESOURCES.md", "CONTRIBUTING.md", "AGENTS.md")
 # A ceiling, not a target. Raise it deliberately in a PR and say why.
 BUDGET = 55_000
 BADGE_PATH = (".github", "badges", "tokens.json")

@@ -7,9 +7,9 @@ check it with.
 
 ## What this repo is
 
-An awesome list. Seven files matter: `README.md`, `TOKENMAXXING.md`,
-`TOKENMAXXING-ANALYSIS.md`, `GLOSSARY.md`, `RESOURCES.md`, `CONTRIBUTING.md`,
-and `.github/scripts/check_annotations.py`. Everything else is CI scaffolding.
+An awesome list. Six files matter: `README.md`, `TOKENMAXXING.md`,
+`GLOSSARY.md`, `RESOURCES.md`, `CONTRIBUTING.md`, and
+`.github/scripts/check_annotations.py`. Everything else is CI scaffolding.
 
 ## The one rule
 
@@ -32,7 +32,6 @@ python .github/scripts/check_annotations.py README.md                 # must pri
 python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
 python .github/scripts/check_annotations.py RESOURCES.md              # external-resource doc
 python .github/scripts/check_annotations.py TOKENMAXXING.md           # anti-pattern catalog
-python .github/scripts/check_annotations.py TOKENMAXXING-ANALYSIS.md  # deep analysis
 python .github/scripts/check_annotations.py --urls README.md          # link extraction
 ```
 
