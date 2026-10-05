@@ -22,18 +22,29 @@ and they are the three things every engineering budget is made of.
 
 ### Why one lever moves all three
 
-The mechanism is an asymmetry in how transformers work:
+The mechanism is an asymmetry in how **autoregressive transformers** work:
 
 - **Input tokens are processed in parallel** and their key/value state can be
   cached and reused. Cheap in wall-clock, cheap in energy, and *deeply*
   discountable in price.
-- **Output tokens are generated sequentially.** One at a time. Unavoidably.
-  Which is why **energy per query tracks output length and not task
-  complexity** — and why output costs 5× and reasoning costs 13×.
+- **Output tokens are generated sequentially.** One at a time. Unavoidably —
+  the causal mask makes token *t* depend on every token before it, so sampling
+  cannot be parallelized without changing the model class.
+
+Which is why **energy per query tracks output length and not task
+complexity** — and why output costs 5× while reasoning costs 13×.
 
 So tokens are the upstream quantity. Cut them and all three gains follow. That
 is the whole bet: the same change that lowers the bill also lowers the latency
 *and* the kilowatt-hours, because all three are billed per token.
+
+**And the asymmetry has an escape hatch, which is the logical endpoint of the
+whole argument.** If output is expensive *because* it is serial, the strongest
+move is not shorter output — it is **no output stream at all.** A
+non-autoregressive decision model doesn't generate tokens; it returns a typed
+value from one forward pass. Jev prices output at **$0.00** for exactly this
+reason. See [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — it
+is a different equation, not a smaller number in this one.
 
 ### And the honest part
 
@@ -112,6 +123,7 @@ power-per-inference, PUE, water, and carbon by grid region, see
   - [🗑️ Delete](#%F0%9F%97%91%EF%B8%8F-delete) — and why it spends your cache
   - [💾 Cache](#%F0%9F%92%BE-cache) — three mechanisms people conflate
 - [Leg 2 — Output](#leg-2--output) — what you get billed for
+  - [🎯 Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — the model class with no output stream
 - [Leg 3 — Lifetime](#leg-3--lifetime) — what you emit becomes context forever
 - [Serve-side](#serve-side-cost-and-latency-not-token-count) — cheaper without being fewer
 - [Interaction matrix](#interaction-matrix) — where this list argues with itself
@@ -616,6 +628,45 @@ A schema is usually smaller than a paragraph, and it removes the preamble tax.
 - **[Terminating tool calls](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/structured-output.ts)** — end the agent turn on the tool call instead of paying an extra inference pass to narrate the result. Small, concrete, widely unknown. `[self-reported]`
 - **[Claude output control](https://www.blockchain-council.org/claude-ai/claude-output-control)** — `max_tokens` as a hard cap, schema-driven JSON reports, `tool_choice` forcing, and "when calling tools, output only tool arguments; no commentary." `[asserted]`
 
+### 🎯 Decide, don't generate
+
+**Constrain** says prefer a schema to a paragraph. This says prefer a schema to a
+*model*. A **System One decision model** is asked a typed question and returns a
+typed answer — no text stream, no decode loop, no output tokens to minimize.
+It is the endpoint of the Output leg: the serial-generation assumption
+[removed rather than optimized](#why-one-lever-moves-all-three).
+
+The distinction that matters: these are **not smaller LLMs**. They are a
+different model class, built on non-autoregressive architectures, and the trade
+is explicit — they give up generation and multi-step reasoning entirely.
+
+- **[Jev (TypeSafe AI)](https://typesafe.ai/blog/introducing-system-one-models-and-jev)** — a commercial decision model. State in, typed answers out, three primitives: `choice` (one of up to 255), `score` (an ordered rubric), `noul` (a yes/no probability). The vendor's architecture table is the claim that matters here: LLM sampling is *"sequential, generates one token at a time, each conditioned on the last"*; Jev's sampler is *"parallel — generates all outputs in a single query."* **70–500 ms** end-to-end against 3–329 s for frontier LLMs, and **output is priced at $0.00** because it is a typed value rather than generated text. `[self-reported]` for the architecture — "parallel sampler" is a product term, not a published design — and see the independent benchmark below for behavior.
+- **[Jev, independently benchmarked](https://arxiv.org/abs/2609.37647)** — 37 datasets, full evaluation splits, **346,009 requests for under US$10**, against Qwen3.8-27B and Gemma-4-E4B scored on identical requests. Beats Qwen on 27 of 37 datasets (none of Qwen's 9 leads outside bootstrap intervals) and Gemma on all 37. Well-calibrated choice probabilities; binary probabilities rank well but sit poorly relative to a fixed 0.5 threshold, so tune before trusting. This is what a measured grade looks like for a model whose internals are closed — **measure the behaviour, grade the mechanism separately.** `[measured]`
+- **[Laya (Convai Innovations, Apache 2.0)](https://huggingface.co/convaiinnovations/laya)** — the open counterpart, and architecturally verifiable: a **bidirectional encoder** (ModernBERT-large 421M / mmBERT-base 322M), not a decoder. One forward pass, ~33 ms, same three primitives, 100+ languages with a script-aware router. Self-hostable, so it's free at the margin. Architecture checkable against public weights; latency is the vendor's own figure. `[measured]/[self-reported]`
+- **[Laya's honest limits](https://aiweekly.co/alerts/convai-ships-laya-a-421m-modernbert-decision-model-apache-20)** — worth reading *before* the benchmark table, because the vendor publishes the unflattering version: zero-shot typed-decisions accuracy is **0.362** against a **0.318 random** and **0.461 majority-class** baseline. The headline 0.766 is a checkpoint fine-tuned on that benchmark's own training split. Out-of-the-box calibration is poor (mean ECE **0.466**); refitting one temperature per question type moves it to 0.081. **These are fast bases to specialize, not decision engines you point at a problem.** `[measured]`
+
+**Two constraints that are pure token economics, inside a model that generates no tokens:**
+
+- **Candidate labels compete for a fixed token budget.** Laya splits input into an *option prompt budget* (`head_max_len`: 192 tokens English, 256 multilingual) and a document budget. At 77 options each label receives ~3–4 tokens and becomes indistinguishable — accuracy degrades in a documented way **above ~20 options**, with hierarchical routing as the prescribed fix. A token budget you have to spend wisely even without a decode loop.
+- **The answer space is defined before the call.** `choice` from ≤255, `score` on a 2–10 level rubric, `noul` as a probability. Score absolutely depends on how you shaped the question — there is no room to disambiguate afterward, which is the same [bounded-goal](README.md#leg-3--lifetime) discipline as a measured cleanup target.
+
+> ⚠️ **Do not claim an energy number for these.** Every energy figure in this
+> list is per-query at autoregressive inference. Nobody has published Wh/query
+> for a System One model, and "it should be much lower" is an
+> `[asserted]` claim wearing a `[measured]` one's clothes. It's in
+> [Open problems](#open-problems).
+
+> **The routing rule that follows:** if a decision can be written as a choice
+> among known options, a score on a known rubric, or a yes/no, it does not need
+> a generative model. That's not token minimalism applied to a prompt — it's
+> token minimalism applied to the model choice, and it's the largest single
+> reduction available on this leg.
+>
+> The corollary is the honest limit: anything needing *explanation*, multi-step
+> reasoning, or an unbounded answer still needs an LLM. The hybrid pattern is
+> the point — decision models for the branch, an LLM for the branch that needed
+> thought.
+
 ### ✏️ Edit cheaply
 
 The edit protocol is a token decision, not a formatting preference.
@@ -769,6 +820,19 @@ The matrix above says which levers conflict. This says which one wins, as
 arithmetic. Everything is expressed in **ratios**, so it survives a price change;
 the ratios themselves are stamped at the bottom.
 
+### The biggest lever is the equation
+
+Every inequality below assumes the standard shape:
+
+```
+cost  =  input × p_in  +  output × p_out
+```
+
+That shape is itself a design choice. A non-autoregressive decision model makes
+`output ≈ 0` **structurally** — not a smaller coefficient in this equation but a
+different equation. No break-even applies to a term you removed.
+→ [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate)
+
 ### Notation
 
 | Symbol | Means |
@@ -915,16 +979,17 @@ the durable part.
 14. A diff is not a rewrite. Edit protocols are a token decision.
 15. Verbosity is trainable, which means brevity is sometimes an artifact, not a fact. Measure per model.
 16. Token count, latency, and dollars are three different numbers. Know which one you reduced.
+17. **Autoregressive output is serial by construction.** The causal mask is why output costs 5× and reasoning costs 13×. When the answer is a bounded choice, a score on a rubric, or a yes/no, the strongest move is not shorter output — it is a model class with no output stream. Removing a term beats shrinking it.
 
 **Lifetime**
 
-17. **You emit context, you don't just spend it.** Review artifact cost like API cost.
-18. **An open-ended cleanup goal will be undershot. Bound it** — name the target and the guard metric.
-19. **A deletion without a retention bar is a regression with extra steps.** State what each thing independently protects before removing it.
-20. **Never convert uncertain candidates into cleanup to hit a number.** This applies to PRs and to ledger entries alike.
-21. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
-22. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
-23. **One change, three budgets.** Money, wall-clock, and joules are all metered per token, so reducing tokens is the rare optimization with no trade-off face. When you find one that trades one budget for another — speculative decoding, precomputed KV — say which one you spent.
+18. **You emit context, you don't just spend it.** Review artifact cost like API cost.
+19. **An open-ended cleanup goal will be undershot. Bound it** — name the target and the guard metric.
+20. **A deletion without a retention bar is a regression with extra steps.** State what each thing independently protects before removing it.
+21. **Never convert uncertain candidates into cleanup to hit a number.** This applies to PRs and to ledger entries alike.
+22. Optimize tokens-per-**task**, not tokens-per-request or per-edit. Re-fetching is the hidden cost on all three legs.
+23. **Don't pay an LLM to summarize your index when a join would do.** Graph quality does not require community summarization — the cheapest systems here reach it with deterministic structure.
+24. **One change, three budgets.** Money, wall-clock, and joules are all metered per token, so reducing tokens is the rare optimization with no trade-off face. When you find one that trades one budget for another — speculative decoding, precomputed KV — say which one you spent.
 
 ---
 
@@ -1021,6 +1086,20 @@ Real gaps. Nobody has measured these.
     in this list and it is the one most likely to return a confidently wrong
     answer. Omitted rather than uncritically included; somebody should measure its
     false-hit rate.
+13. **What is the energy per query for a non-autoregressive decision model?**
+    Every energy figure here is per-query at autoregressive inference. System One
+    models remove the sequential decode loop, so they should be dramatically
+    lower — but nobody has published a Wh/query for one, and the architecture is
+    the whole reason to expect a difference. **"It should be much lower" is not a
+    measurement**, and this is currently the largest unquantified claim the
+    model-class argument rests on.
+    → [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate)
+14. **Does the input side get cheaper too, or only the output side?** A decision
+    model still reads the full state and still has a token budget
+    (`head_max_len`), but it has no KV cache to reuse across turns and no prefix
+    to cache. Whether that makes it better or worse than a cached LLM prefix for
+    high-volume, repeated-state workloads is unmeasured — and it is exactly the
+    case where the LLM's 0.1× cache read might win.
 
 ---
 
@@ -1087,6 +1166,17 @@ Each one names a **default that shipped unmeasured**, with a receipt.
     re-fires every turn against a checkpointer, re-clearing already-cleared
     results and paying for a fresh token count each time. Deletion bugs cost
     money in the direction people forget to check.
+19. **A generative LLM for a bounded decision.** Routing a ticket, scoring
+    urgency, gating a tool call, or picking one of twenty labels does not need a
+    text stream — it needs a `choice`, a `score`, or a `noul`. A generative model
+    is asked to *write* the answer and then have it parsed, which adds output
+    tokens, latency, a schema validation step, and a hallucination surface where
+    none was required. [Jev's independent benchmark](https://arxiv.org/abs/2609.37647)
+    ran **346,009 classification requests for under US$10**; the same work
+    against a frontier LLM is a different order of magnitude. This is the
+    largest single reduction on the Output leg and it is a *model* choice, not a
+    prompt. ⚠️ The exception is load-bearing: anything needing explanation,
+    multi-step reasoning, or an unbounded answer still needs the LLM.
 
 ---
 

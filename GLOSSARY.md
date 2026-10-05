@@ -160,6 +160,16 @@ with credible failure modes). A deletion without one is a regression with extra
 steps.
 → [test-audit](https://github.com/openclaw/openclaw/blob/main/.agents/skills/test-audit/SKILL.md)
 
+**System One model** — A non-autoregressive model class that returns **typed
+decisions instead of generated text**: a `choice` from a fixed set, a `score` on
+a rubric, or a `noul` (yes/no probability). Named after Kahneman's fast
+intuition, against the slow deliberative "System 2" of chain-of-thought. Not a
+smaller LLM — a different architecture (Jev uses a parallel sampler, Laya is a
+bidirectional encoder) that removes the sequential decode loop entirely. The
+trade is explicit: no generation, no multi-step reasoning, and accuracy that
+depends on fine-tuning. Jev prices output at **$0.00**.
+→ [Leg 2 · Decide, don't generate](README.md#%F0%9F%8E%AF-decide-dont-generate)
+
 **Semantic caching** — Reusing a *whole answer* for a semantically similar
 query, bypassing the model run entirely. Saves the most of any mechanism here,
 and carries the failure mode nobody measures: a confidently wrong answer.
