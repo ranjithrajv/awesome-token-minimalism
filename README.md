@@ -11,22 +11,51 @@ the first. The bill for the third is the one nobody has instrumented.
 
 ## Contents
 
-- [The three legs](#the-three-legs)
-- [What counts as bloat](#what-counts-as-bloat)
-- [Evidence grades](#evidence-grades)
-- [Leg 0 — Measure](#leg-0--measure)
-- [Leg 1 — Input](#leg-1--input)
-  - [🕸️ Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) — 879 tokens vs 331,375 on the same corpus, and four ways out
-  - [💾 Cache](#%F0%9F%92%BE-cache) — four different mechanisms; deletion and caching are the same lever pointed opposite ways
-- [Leg 2 — Output](#leg-2--output)
-- [Leg 3 — Lifetime](#leg-3--lifetime)
-- [Serve-side](#serve-side-cost-and-latency-not-token-count)
-- [Interaction matrix](#interaction-matrix)
+- [How to read this](#how-to-read-this)
+- [The three legs](#the-three-legs) — the frame everything else hangs on
+- [What counts as bloat](#what-counts-as-bloat) — and why the enemy is never capability
+- [Evidence grades](#evidence-grades) — the one non-negotiable rule
+- [Leg 0 — Measure](#leg-0--measure) — you cannot cut what you cannot see
+- [Leg 1 — Input](#leg-1--input) — what you send
+  - [📏 Effective context](#%F0%9F%93%8F-effective-context) — why every section after it exists
+  - [🕸️ Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) — 879 tokens vs 331,375 on the same corpus
+  - [🗑️ Delete](#%F0%9F%97%91%EF%B8%8F-delete) — and why it spends your cache
+  - [💾 Cache](#%F0%9F%92%BE-cache) — three mechanisms people conflate
+- [Leg 2 — Output](#leg-2--output) — what you get billed for
+- [Leg 3 — Lifetime](#leg-3--lifetime) — what you emit becomes context forever
+- [Serve-side](#serve-side-cost-and-latency-not-token-count) — cheaper without being fewer
+- [Interaction matrix](#interaction-matrix) — where this list argues with itself
 - [Laws](#laws)
-- [Token ledger](#token-ledger)
-- [Open problems](#open-problems)
-- [Anti-patterns](#anti-patterns)
+- [Token ledger](#token-ledger) — advertised vs. measured
+- [Open problems](#open-problems) — nobody has measured these
+- [Anti-patterns](#anti-patterns) — defaults that shipped unmeasured
 - [Contributing](#contributing)
+
+---
+
+## How to read this
+
+This list is long because the topic has three independent failure modes and
+almost every tool addresses exactly one of them. Four routes, depending on why
+you're here:
+
+| If you want to… | Read |
+|---|---|
+| **Argue with the premise** | [The three legs](#the-three-legs) → [What counts as bloat](#what-counts-as-bloat) → [Interaction matrix](#interaction-matrix) |
+| **Cut a bill this week** | [Leg 0](#leg-0--measure) (see the waste) → [Leg 1 · Budget](#%F0%9F%93%90-budget) and [Leg 2 · Audit](#%F0%9F%93%90-audit) (find the two invisible costs) → [Token ledger](#token-ledger) (don't trust the tool's homepage) |
+| **Build an agent** | [Effective context](#%F0%9F%93%8F-effective-context) → [Select](#%F0%9F%94%8E-select) → [Isolate](#%F0%9F%A7%B1-isolate) → [Reason less](#%F0%9F%A7%A0-reason-less) → [Laws](#laws) |
+| **Review a tool someone recommended** | [Evidence grades](#evidence-grades) → [Token ledger](#token-ledger) → [Anti-patterns](#anti-patterns) |
+
+Two conventions worth knowing before you start:
+
+- **Every entry carries an evidence grade.** `[measured]` means someone stated a
+  baseline and a method. **None of the four popular tools with independently
+  audited numbers hit their headline** — one was *more expensive* than doing
+  nothing. See [Token ledger](#token-ledger). The grade is the list, not the
+  commentary.
+- **The enemy is bloat, never capability.** Every entry keeps the feature and
+  removes an unmeasured cost. If a technique can't be written that way, it's in
+  [Anti-patterns](#anti-patterns) instead.
 
 ---
 
@@ -48,32 +77,21 @@ so rarely stated. See [Interaction matrix](#interaction-matrix).
 
 Adding context is the field's default setting, and it rests on a premise that no
 longer holds. Context is not a bucket — it is a **finite attention budget with
-diminishing returns**. Every model tested got measurably worse as input grew,
-long before any stated limit.
-
-- [Context rot (Chroma, 2025)](https://research.trychroma.com/context-rot) · `18 models, all degraded` · `[measured]`
-  · [replication toolkit](https://github.com/chroma-core/context-rot)
-- [RULER (NVIDIA)](https://github.com/NVIDIA/RULER) · `claimed 128K, effective 64K` · `[measured]`
-- [Lost in the Middle (TACL 2024)](https://aclanthology.org/2024.tacl-1.9/) · `mid-context info → closed-book accuracy` · `[measured]`
+diminishing returns.** Every model tested got measurably worse as input grew,
+long before any stated limit. See [Effective context](#%F0%9F%93%8F-effective-context).
 
 ### Output, in one line
 
 Most of your output bill is invisible. **Reasoning tokens are billed at the
-output rate** and are usually not broken out on any dashboard. A single call
-with an 8,200-token thinking pass cost **7.2× more** than the same call without
-it — with an identical visible response.
-
-- [Brevity is the soul of sustainability (ACL 2025)](https://aclanthology.org/2025.findings-acl.1125/) · `−25…60% length, quality preserved` · `[measured]`
-- [Token-Budget-Aware LLM Reasoning / TALE (ACL 2025)](https://aclanthology.org/2025.findings-acl.1274/) · `−67% output, GSM8K accuracy 81.35 → 84.46%` · `[measured]`
+output rate** and usually aren't broken out on any dashboard. One call with an
+8,200-token thinking pass cost **7.2× more** than the same call without it —
+with an identical visible response. See [Leg 2](#leg-2--output).
 
 ### Lifetime, in one line
 
 Every line an agent generates is a permanent charge on every future session that
 touches that subsystem. OpenClaw deleted **~400k LOC of its own tests** with
-little change in coverage.
-
-- [test-audit skill (OpenClaw)](https://github.com/openclaw/openclaw/blob/main/.agents/skills/test-audit/SKILL.md) · `−400k LOC tests, coverage held` · `[self-reported]`
-- [test-bloat patterns in commit history](https://git.mineracks.com/openclaw/openclaw/commits/commit/61dc7ac67994b8a8ae370d8d90200e87746d1b22) · `37 commits in one burst, "expand X coverage" ×12` · `[measured]`
+little change in coverage. See [Leg 3](#leg-3--lifetime).
 
 ---
 
@@ -126,8 +144,9 @@ Every entry carries one. It is the only editorial rule here that is not negotiab
 
 `[negative]` and `[asserted]` are not padding. They are the credibility
 mechanism, and they are the reason this list is worth reading: most token-savings
-marketing is `[asserted]`, and roughly a third of the *popular* ones fail
-independent measurement. See the [ledger](#token-ledger).
+marketing is `[asserted]`, and **none of the four popular tools that have been
+independently audited hit their claimed number** — one made the bill go *up*.
+See the [ledger](#token-ledger).
 
 Where a result is model-, harness-, or date-specific, say so inline. These
 tools move weekly; an unstamped number is worthless within a month.
@@ -157,23 +176,44 @@ which is why they cannot attribute cost or find the biggest lever.
 
 ## Leg 1 — Input
 
+What you send. Ordered by how much it removes, cheapest first: the evidence
+that it should be less, then budget it, fetch less, structure it, shrink it,
+hide it from the model, delete it, and finally stop re-sending it.
+
+### 📏 Effective context
+
+The measurement that justifies every Input section below. Short prompts are not
+just cheaper — they are *better*, and this is the evidence.
+
+- **[Context rot (Chroma, 2025)](https://research.trychroma.com/context-rot)** · `18 models, all degraded` · `[measured]`
+  Across 18 frontier models including GPT-4.1, Claude 4, Gemini 2.5, and Qwen3: performance degrades as input length grows, well before any stated limit, and **distractors have non-uniform impact** — some waste far more attention than others. The LongMemEval arm is the cleanest version of the argument: **focused input (only relevant parts) versus full input (all 113k tokens, same question)** — focused wins across every model tested. Replication toolkit: [chroma-core/context-rot](https://github.com/chroma-core/context-rot).
+- **[RULER (NVIDIA)](https://github.com/NVIDIA/RULER)** · `claimed 128K, effective 64K` · `[measured]`
+  13 tasks across 4 categories, 4K→128K, with an explicit **effective context length** threshold. Models that score near-perfect on needle-in-a-haystack degrade sharply on multi-hop tracing and aggregation. GPT-4-1106 claims 128K and effectively manages 64K; Llama3.1-70B falls off a cliff after 64K. Near-perfect NIAH is not evidence of usable context.
+- **[Lost in the Middle (TACL 2024)](https://aclanthology.org/2024.tacl-1.9/)** · `mid-context info → closed-book accuracy` · `[measured]`
+  Performance peaks when the relevant span sits at the beginning or end of the context and falls to roughly closed-book accuracy when it sits in the middle — **including in models explicitly trained for long context.** The practical consequence: position is a lever, and a document you could have sliced into two targeted queries does not have to be paid for in full.
+
+> **Read these three together and the Input leg follows.** Effective context is
+> shorter than advertised, degrades before the wall, and is non-uniform in
+> *which* tokens you add. That is why the sections below are ordered by how
+> much they remove, not by how clever they are.
+
 ### 📐 Budget
 
 Allocate the window before you fill it. A cap set uniformly across heterogeneous
 work is itself bloat.
 
 - **[Anthropic: advanced tool use](https://www.anthropic.com/engineering/advanced-tool-use)** — explicit decision thresholds. Use Programmatic Tool Calling when tool definitions exceed 10k tokens, when tool-selection accuracy is a problem, or with 10+ tools. *Don't* when the library is under 10 tools, all are used every session, and schemas are compact. `[measured]`
-- **[TALE (ACL 2025)](https://aclanthology.org/2025.findings-acl.1274/)** — the model estimates its own budget per problem, then reasons against it. `[measured]`
 - **[ctxbudget CI gate](https://github.com/davidcjw/ctxbudget)** — `--fail-under 80` fails a build when context health drops. `[self-reported]`
 - **[CLAUDE.md ≤ 3k tokens](https://github.com/JoeArmageddon/Claude-Master-Skill/blob/main/docs/token-budget.md)** — the 3,000-token / 40-instruction cap, and the finding behind it: adherence degrades past ~150–200 total instructions, *including the ones you care about*. Also: MCP server limit of 10. `[self-reported]`
 - **[< 100 lines of CLAUDE.md](https://gist.github.com/yurukusa/556f67c493a2729ce9b1703f5003a227)** — 50–100 lines is the balance; 200+ means split into `.claude/rules/`. Plus allowlist-over-blocklist and move-safety-rules-to-hooks. `[self-reported]`
+- **[TALE (ACL 2025)](https://aclanthology.org/2025.findings-acl.1274/)** — noted here only because the *technique* generalises: have the model **estimate its own budget before it spends it.** TALE applies it to reasoning tokens and gets −67%; the same estimate-then-constrain shape works for context. Its numbers live in [Leg 2 · Budget](#%F0%9F%8E%AF-budget). `[measured]`
 
 ### 🔎 Select
 
 Retrieval is a **runtime** decision, not a preprocessing step. Hold identifiers
 (a file path, a query, a URL) and load the payload when the task needs it.
 
-- **[Anthropic: effective context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)** — the canonical statement: *find the smallest possible set of high-signal tokens*. Attention budget, n² pairwise relationships, just-in-time retrieval, progressive disclosure, compaction, note-taking, subagents, tool-result clearing. `[measured]`
+- **[Anthropic: effective context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)** — the canonical statement: *find the smallest possible set of high-signal tokens*. Attention budget, n² pairwise relationships, just-in-time retrieval, progressive disclosure, compaction, note-taking, subagents. (Tool-result clearing from the same post has its own section: [Delete](#%F0%9F%97%91%EF%B8%8F-delete).) `[measured]`
 - **[Tool Search Tool](https://www.anthropic.com/engineering/advanced-tool-use)** — 134k → 8.7k tokens, **and** tool selection improved: Opus 4 49% → 74%, Opus 4.5 79.5% → 88.1%. Fewer schemas, better choices. `[self-reported]`
 - **[MCP client best practices](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/docs/2026-07-28/develop/clients/client-best-practices.mdx)** — progressive discovery + programmatic tool calling, with the threshold at which to switch. `[measured]`
 - **[RAG-MCP](https://arxiv.org/html/2505.03275v1)** — semantic retrieval over MCP schemas; retrieve top-k tool descriptions instead of all of them. `[measured]`
@@ -288,23 +328,67 @@ pipes.
 - **[mcp-compressor (Atlassian)](https://www.atlassian.com/blog/developer/mcp-compression-preventing-tool-bloat-in-ai-agents)** — proxy that compresses tool descriptions 70–97%, expanding schemas only on demand. `[self-reported]`
 - **[Cognition: Don't Build Multi-Agents](https://cognition.ai/blog/dont-build-multi-agents)** — and the honest follow-up, [Multi-Agents: What's Actually Working](https://cognition.com/blog/multi-agents-working). Read both. The first says share full traces, not messages; the second says the shape that works is map-reduce-and-manage, and that agents should contribute intelligence while **writes stay single-threaded**. `[measured]`
 
+### 🗑️ Delete
+
+Stop paying for context you have already consumed. Two implementations, one
+tradeoff: you can delete it yourself, or let the provider delete it for you —
+and the second one quietly spends your cache.
+
+#### Client-side: you decide what goes
+
+- **[Anthropic: tool result clearing](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)** — described as the safest, lightest touch: clear the tool result after the turn in which it was consumed, keep the model's own summary of it. `[measured]`
+- **[Contextual Memory Virtualisation](https://github.com/CosmoNaught/claude-code-cmv)** — strip tool-result bodies, base64 blocks, and thinking signatures while keeping every user and assistant message verbatim. 132k → 2.3k. Adds named snapshots, branching, and trimming: version control for context. `[self-reported]`
+- **[`/clear` vs `/compact`](https://github.com/jaczaar/claude-code-bestpractices/blob/master/research/02-context-management.md)** — `/compact` summarizes and keeps you in the same topic; `/clear` is a hard reset. Don't carry a database migration into a frontend feature. `[asserted]`
+- **[contextwatch](https://pypi.org/project/contextwatch/)** — find *which* result is still costing you: the turn-3 tool output still billing 8k tokens at turn 20. (Listed in [Leg 0](#leg-0--measure); repeated here because deletion is what you do with the answer.) `[self-reported]`
+
+> ⚠️ **Deletion has a blast radius.** [microcompact silently cleared MCP-backed
+> user memory](https://github.com/anthropics/claude-code/issues/57788) — no
+> notice, no opt-in, and the model could not self-diagnose the loss. Deleting
+> output that a downstream system treats as durable storage is not an
+> optimization. **Verify the summary before you delete the source.** See
+> [Leg 3 retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one).
+
+#### Provider-side: the provider does it for you
+
+Strong numbers — and it spends your cache to get them.
+
+- **[Anthropic: managing context on the Claude Developer Platform](https://claude.com/blog/context-management)** — the measured case: **context editing alone +29%** agentic-search performance over baseline; **memory tool + context editing +39%**; and on a **100-turn web search eval, −84% token consumption** while completing workflows that would otherwise fail on context exhaustion. `[measured]`
+- **[Context editing API](https://platform.claude.com/docs/en/build-with-claude/context-editing)** — beta header `context-management-2025-06-27`; strategies `clear_tool_uses_20250919` and `clear_thinking_20251015`. Tunable `trigger` (default 100k input tokens), `keep`, `exclude_tools`, `clear_tool_inputs`. `[measured]`
+  ⚠️ **Three documented sharp edges, worth reading before enabling:**
+  - *"Tool clearing will invalidate your cache if your prefixes contain your tools."*
+  - Thinking blocks: **kept** → cache preserved; **cleared** → cache invalidated at that point. You are choosing between window space and cache hits, explicitly.
+  - For accounts created **on or after 2026-08-31**, replaying an invalidated block is **rejected** unless you opt into dropping it.
+- **[Anthropic memory tool](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-tool-use.html)** — Claude reads and writes a developer-owned local directory, so durable state lives *outside* the window instead of inside it. The same move as structured note-taking, with the storage backend under your control. `[measured]`
+- **[LangChain `ClearToolUsesEdit`](https://reference.langchain.com/python/langchain/agents/middleware/context_editing/ClearToolUsesEdit)** — model-agnostic port, with triggers in tokens, messages, or **fraction of the model's window** (`{fraction: 0.8}`). Note `clear_at_least`: the API ships a knob whose documented purpose is "determining whether context clearing is worth breaking your prompt cache for." The tradeoff is a first-class parameter. `[self-reported]`
+- **[langchain #37815](https://github.com/langchain-ai/langchain/issues/37815)** — ⚠️ `ClearToolUsesEdit` **fires every turn** when a checkpointer is present: edits run on a `deepcopy`, so the `cleared` flag never persists back to state. The edit re-applies forever, and `token_count_method="model"` keeps paying for token counts on unchanged state. A deletion feature that silently costs money on every request. `[negative]`
+- **[LiteLLM context management polyfill](https://docs.litellm.ai/docs/claude_code_context_management)** — applies `clear_tool_uses` in-gateway for any non-Anthropic provider, so you write the loop once. (`clear_thinking` listed as coming soon.) `[self-reported]`
+
+> **The tradeoff to hold onto:** clearing tool results and keeping them are both
+> defensible, and which wins depends on your cache hit rate — not your token
+> count. Deletion moves cost from every-turn to once-per-invalidation. If you
+> can't see your hit rate, you can't tell whether you're saving or spending,
+> which is why [rule 4 of Cache](#%F0%9F%92%BE-cache) is the one to read first.
+
+
 ### 💾 Cache
 
 Cheapest input tokens are the ones you don't re-send.
 
-But "caching" names **four different mechanisms** on different clocks, and
-conflating them is how teams ship a cache that saves nothing. Sort them first:
+But "caching" names **three genuinely different mechanisms** on different
+clocks, and conflating them is how teams ship a cache that saves nothing:
 
 | Mechanism | What it reuses | Saves | Breaks when |
 |---|---|---|---|
 | **Prefix caching** | identical prompt prefix, provider-side | input $ + TTFT | anything in the prefix changes |
-| **Server-side context editing** | *nothing* — it deletes | tokens now | **it invalidates the prefix cache** |
 | **KV precompute / CAG** | computed KV states, offline | prefill compute, TTFT | model or corpus changes |
 | **Semantic / response caching** | whole answers by similarity | everything | nothing, but it's a different system |
 
-Rows 1 and 2 point opposite ways. That tension is the most important thing in
-this section, and [CAPC](https://arxiv.org/html/2607.15516v1) shows the same
-collision arriving from the compression side.
+A fourth thing gets called "caching" and isn't: **provider-side deletion**. It
+reuses nothing, it just removes tokens, and it has the awkward property of
+**invalidating the prefix you just built.** It's in
+[Delete](#%F0%9F%97%91%EF%B8%8F-delete) because that's what it is.
+[CAPC](https://arxiv.org/html/2607.15516v1) shows the same collision arriving
+from the compression side.
 
 #### 🏷️ Prefix caching (provider-side)
 
@@ -320,28 +404,7 @@ collision arriving from the compression side.
 3. Cache operates on ~1k-token blocks. A 300-token prompt has nothing to reuse.
 4. **Measure the hit rate, not the cache size.** It's the only number that says whether any of this works — `cachedContentTokenCount` / `usage_metadata.cached_tokens` on Gemini, `usage.cache_read_input_tokens` on Anthropic. OpenHands treats it as its **top-level metric**, and the reason is the price: cached $0.30 vs uncached $3.20 per MTok, roughly 10×. `[self-reported]`
 
-#### 🗑️ Server-side context editing
-
-Deletion, done by the provider. Strong numbers — and it invalidates the cache.
-
-- **[Anthropic: managing context on the Claude Developer Platform](https://claude.com/blog/context-management)** — the measured case: **context editing alone +29%** agentic-search performance over baseline; **memory tool + context editing +39%**; and on a **100-turn web search eval, −84% token consumption** while completing workflows that would otherwise fail on context exhaustion. `[measured]`
-- **[Context editing API](https://platform.claude.com/docs/en/build-with-claude/context-editing)** — beta header `context-management-2025-06-27`; strategies `clear_tool_uses_20250919` and `clear_thinking_20251015`. Tunable `trigger` (default 100k input tokens), `keep`, `exclude_tools`, `clear_tool_inputs`. `[measured]`
-  ⚠️ **Three documented sharp edges, worth reading before enabling:**
-  - *"Tool clearing will invalidate your cache if your prefixes contain your tools."*
-  - Thinking blocks: **kept** → cache preserved; **cleared** → cache invalidated at that point. You are choosing between window space and cache hits, explicitly.
-  - For accounts created **on or after 2026-08-31**, replaying an invalidated block is **rejected** unless you opt into dropping it.
-- **[Anthropic memory tool](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-tool-use.html)** — Claude reads and writes a developer-owned local directory, so durable state lives *outside* the window instead of inside it. The same move as structured note-taking, with the storage backend under your control. `[measured]`
-- **[LangChain `ClearToolUsesEdit`](https://reference.langchain.com/python/langchain/agents/middleware/context_editing/ClearToolUsesEdit)** — model-agnostic port, with triggers in tokens, messages, or **fraction of the model's window** (`{fraction: 0.8}`). Note `clear_at_least`: the API ships a knob whose documented purpose is "determining whether context clearing is worth breaking your prompt cache for." The tradeoff is a first-class parameter. `[self-reported]`
-- **[langchain #37815](https://github.com/langchain-ai/langchain/issues/37815)** — ⚠️ `ClearToolUsesEdit` **fires every turn** when a checkpointer is present: edits run on a `deepcopy`, so the `cleared` flag never persists back to state. The edit re-applies forever, and `token_count_method="model"` keeps paying for token counts on unchanged state. A deletion feature that silently costs money on every request. `[negative]`
-- **[LiteLLM context management polyfill](https://docs.litellm.ai/docs/claude_code_context_management)** — applies `clear_tool_uses` in-gateway for any non-Anthropic provider, so you write the loop once. (`clear_thinking` listed as coming soon.) `[self-reported]`
-
-> **The shape to notice:** clearing tool results and keeping them are both
-> defensible, and which wins depends on your cache hit rate — not your token
-> count. Deletion moves cost from every-turn to once-per-invalidation. If you
-> can't see your hit rate, you can't tell whether you're saving or spending,
-> which is why rule 4 comes before the rest.
-
-#### ⚡ Precomputed KV caches (CAG)
+#### 🧊 Precomputed KV caches (CAG)
 
 Move the prefill cost offline. Correct when knowledge is stable and small enough
 to hold. A real architecture, not a micro-optimization.
@@ -352,25 +415,12 @@ to hold. A real architecture, not a micro-optimization.
 - **[ACC — adaptive contextual compression for CAG](https://arxiv.org/html/2505.08261v1)** — **−45% context window occupancy**, sub-700ms inference, +5–10% BERTScore over sparse/dense RAG. The hybrid CAG-RAG variant adds 1–2 BERTScore points for 5–10% latency. `[measured]`
   ⚠️ **And the cost side CAG marketing omits:** on HotpotQA, standard CAG needs **18,000MB** against sparse RAG's 12,000MB — the *most* memory of any arm tested. Compressed CAG (ACC) brings that to 13,000MB. Preloading trades per-query cost for resident memory, permanently.
 
-### 🗑️ Delete (narrow)
-
-The narrowest sense of the word: stop paying for a tool result you already read.
-
-- **[Anthropic: tool result clearing](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)** — described as the safest, lightest touch. Clear after the turn in which it was consumed. `[measured]`
-- **[Contextual Memory Virtualisation](https://github.com/CosmoNaught/claude-code-cmv)** — strip tool-result bodies, base64 blocks, and thinking signatures; keep every user and assistant message verbatim. 132k → 2.3k. Named snapshots, branching, trimming — version control for context. `[self-reported]`
-- **[`/clear` vs `/compact`](https://github.com/jaczaar/claude-code-bestpractices/blob/master/research/02-context-management.md)** — `/compact` summarizes and keeps you in the same topic; `/clear` is a hard reset. Don't carry a database migration into a frontend feature. `[asserted]`
-- **[contextwatch](https://pypi.org/project/contextwatch/)** — find the specific turn-3 tool result still costing 8k tokens at turn 20. `[self-reported]`
-
-> ⚠️ **Deletion has a blast radius.** [microcompact cleared MCP-backed user
-> memory](https://github.com/anthropics/claude-code/issues/57788) without notice
-> or opt-in, and the model could not self-diagnose the loss. Deleting output that
-> a downstream system treats as durable storage is not an optimization. **Verify
-> the summary before you delete the source.** See
-> [Leg 3 retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one).
-
----
 
 ## Leg 2 — Output
+
+What you get billed for, at 5–25× the input rate. Ordered the same way: audit
+the invisible spend, budget it, reason less about it, constrain its shape, write
+it cheaply, and cut it at the tool boundary.
 
 ### 📐 Audit
 
@@ -411,7 +461,7 @@ Not "stop reasoning" — **stop reasoning uniformly about easy problems.**
 - **[caveman](https://github.com/JuliusBrussee/caveman)** — output-side prose compression. States its own boundary better than most: *"Caveman only affects output tokens — thinking/reasoning tokens are untouched. Caveman make mouth smaller. Caveman no make brain smaller."* Ships `caveman-compress` for memory files (~46% of CLAUDE.md, permanently) and a three-arm `evals/` harness that explicitly refuses the "verbose vs skill" comparison as *cheating* — comparing to verbose Claude conflates the skill with generic terseness. ⚠️ **Advertised −65%, independently measured −8.5%.** `[measured]/[asserted]` — audit is measured, the tool's own headline is not
 - **[CAVEWOMAN (Adobe Research)](https://arxiv.org/abs/2606.24083)** — cited by caveman as measuring caveman-style output compression across 8 models, 5 datasets, 5 compression levels at 1.4–2.4× cost cut, up to 3×. **Not independently verified here** — treat as self-reported until you read the paper. `[self-reported]`
 
-### 📏 Constrain
+### 🧾 Constrain
 
 A schema is usually smaller than a paragraph, and it removes the preamble tax.
 
@@ -437,11 +487,15 @@ The edit protocol is a token decision, not a formatting preference.
 
 ## Leg 3 — Lifetime
 
+What you emit becomes context that every future session pays for. Ordered by
+when you can act: don't build it, prune what you built, bound the goal you prune
+toward, and hold a retention bar so pruning doesn't eat your guards.
+
 > **You emit context, you don't just spend it.** Every line an agent generates is
 > a charge on every future session that touches that subsystem. Review artifact
 > cost the way you review API cost.
 
-### 🗑️ Build less
+### ⬇️ Build less
 
 Prospective. Don't emit the artifact in the first place.
 
@@ -507,7 +561,7 @@ ordering when it is observable behavior, and regressions with credible failure
 modes. "Source inspection" counts when it fails on a contract change and survives
 an identifier-only refactor.
 
-This is also the general form of the [microcompact failure](#%F0%9F%97%91%EF%B8%8F-delete-narrow):
+This is also the general form of the [microcompact failure](#%F0%9F%97%91%EF%B8%8F-delete):
 deletion without a retention bar is a regression with extra steps.
 
 ---
