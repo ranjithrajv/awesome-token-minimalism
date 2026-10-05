@@ -44,6 +44,7 @@ See [harness/README.md](harness/README.md) for the full breakdown.
 - [Glossary](GLOSSARY.md) — every load-bearing term, defined once
 - [Resources](RESOURCES.md) — external frameworks, essays, and analysis
 - [Tokenmaxxing](TOKENMAXXING.md) — the negative results, at fleet scale
+- [Tokenmaxxing, analyzed](TOKENMAXXING-ANALYSIS.md) — the root causes, the seven ledgers, and a wider graded inventory
 - [The case](#the-case) — money, time, energy, and why less bloat is *more* correct
   - [Four gains, one lever](#four-gains-one-lever) — the numbers
   - [Why one lever moves all four](#why-one-lever-moves-all-four) — the mechanism, and its escape hatch
@@ -1432,6 +1433,7 @@ Adjacent lists, linked rather than duplicated:
 - [Glossary](GLOSSARY.md) — every load-bearing term in this list, defined once with the number that makes it matter.
 - [Resources](RESOURCES.md) — external frameworks, essays, and analysis about token minimalism.
 - [Token maxxing](TOKENMAXXING.md) — the anti-pattern catalog: cited blow-ups, from fleet-scale bills to optimizers that cost more.
+- [Token maxxing, analyzed](TOKENMAXXING-ANALYSIS.md) — why the error is structural, the seven harm ledgers, and a wider graded inventory.
 - [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers) — the catalogs. Check your schema cost before connecting one.
 - [agentskills.io](https://agentskills.io/) · [spec](https://agentskills.io/specification) — three-tier progressive disclosure: ~100 tokens of catalog per skill, <5k instructions on activation, unlimited resources on access.
 - [AGENTS.md](https://agents.md/) — nested-scoped instructions, 60k+ projects, stewarded by the Agentic AI Foundation under the Linux Foundation.

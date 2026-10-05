@@ -6,6 +6,7 @@
 > on someone else's bill than on your own.
 
 Part of [Awesome Token Minimalism](README.md).
+Deep analysis: [Token Maxxing — A Deep Analysis](TOKENMAXXING-ANALYSIS.md).
 
 ---
 
@@ -138,6 +139,7 @@ list:
 
 ## See also
 
+- [Token Maxxing — A Deep Analysis](TOKENMAXXING-ANALYSIS.md) — root causes, the seven ledgers, and a wider graded inventory
 - [Token ledger](README.md#token-ledger) — advertised vs. independently measured
 - [Anti-patterns](README.md#anti-patterns) — the defaults that produced these bills
 - [Open problems](README.md#open-problems) — what nobody has measured yet
