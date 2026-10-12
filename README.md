@@ -38,11 +38,13 @@ the first. The bill for the third is the one nobody has instrumented.
   - [📏 Effective context](#%F0%9F%93%8F-effective-context) — why every section after it exists
   - [🕸️ Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) — 879 tokens vs 331,375 on the same corpus
   - [🖼️ Multimodal tokens](#%F0%9F%96%BC%EF%B8%8F-multimodal-tokens) — same pixels, ~16× spread
+  - [📦 Serialize](#%F0%9F%93%A6-serialize) — same data, cheaper notation
   - [🗑️ Delete](#%F0%9F%97%91%EF%B8%8F-delete) — and why it spends your cache
   - [💾 Cache](#%F0%9F%92%BE-cache) — three mechanisms people conflate
 - [Leg 2 — Output](#leg-2--output) — what you get billed for
   - [🎯 Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — the model class with no output stream
 - [Leg 3 — Lifetime](#leg-3--lifetime) — what you emit becomes context forever
+  - [🧠 Agent memory](#%F0%9F%A7%A0-agent-memory--reuse-what-you-emitted) — the lifetime leg, sold as a product
 - [Serve-side](#serve-side-cost-and-latency-not-token-count) — cheaper without being fewer
 - [Interaction matrix](#interaction-matrix) — where this list argues with itself
 - [🧮 Break-even](#%F0%9F%A7%AE-break-even) — the arithmetic that settles those arguments
@@ -575,6 +577,7 @@ shifts from query-time prompt size to *ingestion-time* cost and staleness:
 - **[Graph-based agent memory survey (2026)](https://arxiv.org/pdf/2602.05665v1)** — taxonomy across KG / hierarchical / temporal / hypergraph / hybrid, with the selection rule: precision and explicit multi-hop favor relational graphs; compression and abstraction favor hierarchical summaries; temporal fidelity motivates temporal graphs; cross-modal fuzzy recall favors vector or hybrid. `[measured]`
 - **[True Memory — "Storage Is Not Memory"](https://arxiv.org/html/2605.04897v1)** — the sharpest negative in this section, and it indicts the whole family. Extraction at ingestion is the wrong primitive: **content discarded before the query is known cannot be recovered at retrieval time.** Argues the extraction family (Mem0, Zep, Graphiti, Supermemory, EverMemOS) inverts the relationship — it commits content to a fixed schema at ingestion and "the representation becomes the memory." Their counter: single SQLite file, no graph store or vector index, 87.8% on LongMemEval (n=500). `[measured]`
 - **[Zep / Graphiti](https://help.getzep.com/)** — temporal Context Graph with bitemporal fact validity, so "no medication in January" and "new prescription in March" stay distinct rather than one overwriting the other. `[self-reported]`
+  ⚠️ The headline is contested by its own competitor. The **84% LoCoMo** claim was re-run at **58.44%** by Mem0's CTO; Zep counter-claimed **75.14%** without adopting the re-run ([getzep/zep-papers#5](https://github.com/getzep/zep-papers/issues/5)). Same shape as the [Token ledger](#token-ledger) — advertised vs measured, and the correction is public. Listed with the rest of the family in [Agent memory](#%F0%9F%A7%A0-agent-memory--reuse-what-you-emitted).
 - **[Neo4j agent memory architecture](https://neo4j.com/labs/agent-memory/explanation/graph-architecture)** — the graph-native case: index-free adjacency gives O(1) direct lookups and O(k) 2-hop traversal where relational is O(n·log n). `[asserted]`
 
 #### Graphs with no LLM in the loop
@@ -658,6 +661,30 @@ right one.
 > with the lowest token cost that still carries the decision-relevant
 > information. That is the same judgment as [Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering)
 > and [Select](#%F0%9F%94%8E-select), applied to pixels.
+
+### 📦 Serialize
+
+Lossless re-encoding of what you send. Not compression — nothing is dropped,
+the same data is written in a cheaper notation, so there is no information to
+re-fetch and no retention bar to satisfy.
+
+JSON is priced by its punctuation. Every brace, bracket, comma, and repeated key
+is a token the model does not need: the structure exists for parsers, and an LLM
+reading 500 uniform rows pays the same 500 field names 500 times. Declare the
+field list once, stream the values, and the payload gets cheaper without getting
+smaller.
+
+- **[TOON — Token-Oriented Object Notation](https://github.com/toon-format/toon)** · `flat/tabular −22…−43%, accuracy flat` · `[measured]/[self-reported]`
+  Declare the keys once in a header, then stream row values: CSV-style compactness with YAML-like indentation and explicit `[N]` lengths, so the model still sees the shape it was given, plus a deterministic lossless round-trip — which is the additive clause here, since the schema is unchanged and only the notation moves. The [benchmark paper](https://arxiv.org/html/2603.03306v1) measures **22% fewer tokens than plain JSON** on aligned tabular data at equal one-shot accuracy (90.5%); the format's own retrieval benchmark claims **42.6% fewer tokens** at flatly equal accuracy (72.2% vs 71.4% over 244 questions, 4 models). The paper is the measured half; the headline is the authors running their own harness.
+  ⚠️ **Two ways this loses, both documented.** The win is a property of the data's *shape*, not of JSON in general — on nested or non-aligned data TOON is **more expensive than compact JSON (877 vs 802 tokens)**. And it carries a [prompt tax](GLOSSARY.md#prompt-tax): the instructions that teach the model the format cost tokens, so on short payloads the total is worse than plain JSON. Savings amortize over long uniform lists — check the payload size before you check the ratio.
+
+> **The same move, one layer down.** The [relation-grouped graph
+> representation](https://arxiv.org/html/2606.25656) already in
+> [Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) collapses repeated
+> relations into a single grouped edge, taking per-entity token cost from **O(n)
+> to O(1)** in relation count. It is filed there because it needs a graph to apply
+> to; the transferable part is the same idea as a TOON header — write the
+> repeating structure once.
 
 ### ✂️ Compress
 
@@ -898,19 +925,25 @@ The edit protocol is a token decision, not a formatting preference.
 ### ✂️ Prune output at the tool boundary
 
 - **[rtk](https://github.com/ai-skynet-labs/reduce-tokens)** — transparent Bash-output rewrite, claimed 60–90%. ⚠️ **Measured +7.6% cost** at low reasoning effort (p=0.004), ±0% at high. Note its own honest limit: built-in Read/Grep/Glob bypass the hook entirely. `[negative]`
-- **[Headroom](https://github.com/headroomlabs-ai/headroom)** `[measured]` — compresses tool
+- **[Headroom](https://github.com/headroomlabs-ai/headroom)** `[self-reported]` — compresses tool
   outputs, logs, files, and RAG chunks before they reach the LLM. 20% fewer tokens
   for coding agents, 60–95% fewer for JSON, same answers. Library, proxy, and MCP
-  server. The capability is preserved — the cost is removed.
-- **[Ratel](https://github.com/ratel-ai/ratel)** `[measured]` — context engineering for AI
-  agents. ~80% fewer tokens. Fixes tool overload. Skills and memory with in-process
-  BM25 and semantic retrieval. Progressive disclosure. No vector DB.
-- **[Chisle](https://github.com/JayPokale/Chisle)** `[measured]` — cuts token bill on three
+  server. Author-run benchmarks, no stated baseline, no independent replication —
+  graded the same as it is in [Compress](#%E2%9C%82%EF%B8%8F-compress). The
+  capability is preserved — the cost is removed.
+- **[Ratel](https://github.com/ratel-ai/ratel)** `[self-reported]` — context engineering for AI
+  agents. ~80% fewer tokens, against no stated baseline or task set, so the number
+  is the authors' own claim rather than a re-runnable method. Fixes tool overload.
+  Skills and memory with in-process BM25 and semantic retrieval. Progressive
+  disclosure. No vector DB.
+- **[Chisle](https://github.com/JayPokale/Chisle)** `[self-reported]` — cuts token bill on three
   axes: terse prose, YAGNI-first code, and tool-output compression. MIT licensed,
   zero dependencies. Published benchmarks: 83% of bare model billed tokens on a
   26-cell Claude Code run (2026-10-01), 52% average on 20 live tasks. The only arm
-  below a bare model. Pays on long answers and coding prompts; breaks even on
-  short answers. The capability is preserved — the cost is removed.
+  below a bare model. The baseline is stated but the cells and tasks are not
+  published, so nobody outside the repo can re-run it. Pays on long answers and
+  coding prompts; breaks even on short answers. The capability is preserved — the
+  cost is removed.
 - **[lowfat](https://github.com/zdk/lowfat)** `[measured]` — pluggable CLI filter that
   strips noise from command output. Rust, zero dependencies. Measured reduction on
   bundled samples: git diff −16% to −96%, git log −53% to −91%, git status −62% to
@@ -928,7 +961,8 @@ The edit protocol is a token decision, not a formatting preference.
 
 What you emit becomes context that every future session pays for. Ordered by
 when you can act: don't build it, prune what you built, bound the goal you prune
-toward, and hold a retention bar so pruning doesn't eat your guards.
+toward, hold a retention bar so pruning doesn't eat your guards — and reuse what
+you emitted instead of re-emitting it ([Agent memory](#%F0%9F%A7%A0-agent-memory--reuse-what-you-emitted)).
 
 > [!NOTE]
 > **You emit context, you don't just spend it.** Every line an agent generates is
@@ -1060,6 +1094,44 @@ an identifier-only refactor.
 
 This is also the general form of the [microcompact failure](#%F0%9F%97%91%EF%B8%8F-delete):
 deletion without a retention bar is a regression with extra steps.
+
+### 🧠 Agent memory — reuse what you emitted
+
+The lifetime leg, sold as a product. A memory system keeps the artifacts you
+already paid to produce and fetches the relevant slice on demand, instead of
+re-explaining the project every session. The measurement surface is
+**tokens per task across sessions**, not tokens per request: memory *adds*
+tokens to any single call while removing whole re-reads, so the honest delta is
+a fraction over a task, never a per-call number.
+
+Two things to hold in mind before reading the list. Memory is compression, so
+it lives under the [retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one)
+above and under the [microcompact failure](#%F0%9F%97%91%EF%B8%8F-delete) — the
+sharpest argument against the family, "storage is not memory," is filed in
+[True Memory](https://arxiv.org/html/2605.04897v1). And the family's headline
+benchmarks are vendor-run and contested **by the other vendors in it**, so
+nothing below carries a headline without an independent re-run attached.
+
+- **[TencentDB Agent Memory](https://github.com/TencentCloud/TencentDB-Agent-Memory)** — `lifetime` — MIT proxy in front of any OpenAI-compatible agent (Claude Code, Codex, Hermes, OpenClaw): conversations, docs, and code are extracted into four governed assets — Chat Memory distilled L0 conversation → L1 atom → L2 scenario → L3 persona, a versioned Skill library, Wiki (docs into a linked page graph), and CodeGraph (symbols, callers, impact paths — forked from [codegraph](https://github.com/colbymchenry/codegraph)). Retrieval is layered BM25 + vector + RRF, bootstrapping from L2/L3 and falling back to L1/L0, **capped by item count, character budget, and timeout** so the memory cannot crowd the window. Repo benchmark: PersonaMem **48% → 76%**. The launch coverage's "221M → 85M tokens, −61.4%" carries no stated baseline in the repo, so the accuracy number is graded and the token number is not repeated as fact. Capability added; the unmeasured cost removed is re-reading and re-explaining what was already known. `[self-reported]`
+- **[Mem0](https://github.com/mem0ai/mem0)** — `lifetime` — the extraction family's reference implementation: facts pulled at ingestion into a vector or graph store, retrieved per turn. Vendor-reported **92.5 LoCoMo / 94.4 LongMemEval** at "3–4× lower token cost than full context," and its 2026 algorithm report puts a retrieval call at ~**6,956 tokens** — at least a token figure with a unit attached. Independent re-runs land far lower (~49% LongMemEval), and Zep disputes the benchmark's validity wholesale. `[self-reported]`
+- **[Letta](https://www.letta.com)** — `lifetime` — the MemGPT lineage, API-first: hierarchical core memory plus archival memory, both exposed to the model as explicit tools (`core_memory_append` / `archival_memory_insert`), so the agent decides what persists. Its Letta Leaderboard benchmarks *models* on memory management rather than competing memory systems — a different claim from "our store is best." `[self-reported]`
+- **[Supermemory](https://github.com/supermemoryai/supermemory)** — `lifetime` — the one in this family that ships a re-runnable instrument: **MemoryBench** is open-source, self-hostable, and runs the same datasets against Supermemory, Mem0, and Zep. Credit for the harness; the caution is that the "#1 on LongMemEval, LoCoMo, ConvoMem" headline still comes from its own runs of it. `[self-reported]`
+- **[Cognee](https://github.com/toteretes/cognee)** — `lifetime` — extract–cognify–load pipeline over a knowledge graph, with SOTA-adjacent BEAM claims. The independent testbed below measures it at **55–56%** LoCoMo accuracy against 77–81% for the vector cluster, and attributes the gap to retrieval incompleteness rather than reasoning. `[self-reported]/[measured]` — claimed by the authors, measured by others
+- **[EverMemOS](https://arxiv.org/abs/2601.02163)** — `lifetime` — self-organizing memory OS with SOTA claims on long-context benchmarks. EverMemBench, the benchmark around it, is the honest instrument: on long-horizon interactive memory the best system reaches **17.27%**, and a frontier long-context model drops to 26.51%. `[measured]/[self-reported]`
+
+> [!IMPORTANT]
+> **Nothing above has an independently reproduced headline.** Two benchmarks —
+> LOCOMO and LongMemEval — carry the entire family, and its vendors correct each
+> other on them (the [Zep / Graphiti](https://help.getzep.com/) entry in
+> [Graph engineering](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) is the worked
+> example). If you need to pick one, measure your own task in a paired A/B first;
+> the [token-harness](https://github.com/ranjithrajv/awesome-token-minimalism/tree/main/harness)
+> in this repo exists for exactly that.
+
+The two instruments worth using in place of a vendor number:
+
+- **[Cost and accuracy of long-term memory in distributed multi-agent systems](https://arxiv.org/abs/2601.07978)** — the only entry here with a stated baseline and a re-runnable testbed: mem0, Graphiti, and cognee against RAG and full-context on LOCOMO, measuring accuracy, latency, CPU time, peak RAM, disk I/O, network, and **TCO**. Two clusters — mem0, RAG, and full-context at **77–81%**; Graphiti and cognee at **55–56%** — and the gap is retrieval incompleteness, not reasoning. The number that matters for this list: **RAG matches the best accuracy at 8.4× lower TCO than mem0**, and full-context *loses* to mem0 despite supplying the entire conversation. Compression precision, not context volume, decides the score. `[measured]`
+- **[MemoryAgentBench](https://arxiv.org/abs/2507.05257)** — independent benchmark across four competencies: accurate retrieval, test-time learning, long-range understanding, and **selective forgetting** — the last being this list's [Delete](#%F0%9F%97%91%EF%B8%8F-delete) leg scored as a capability. Findings: no method masters all four, including plain RAG. `[measured]`
 
 [↑ Contents](#contents)
 
