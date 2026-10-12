@@ -12,7 +12,6 @@
     "measurement_surface": "tokens per scenario summed over all sessions; not per request",
     "billed": "answer channel plus the memory system's own extraction calls",
     "quality_guard": "keyword checks per session; a wrong fact fails the guard",
-    "install": "pip install \"mem0ai\" \"fastembed\"",
-    "task_fn": "tasks.memory_mem0:run_task"
+    "install": "pip install \"mem0ai\" \"fastembed\""
   }
 }
