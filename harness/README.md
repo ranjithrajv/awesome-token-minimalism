@@ -176,6 +176,52 @@ Per-system-segment breakdown:
 
 **Key finding:** Tool schemas cost 8,521 tokens per session — a permanent tax on every turn. The capability those schemas provide is real; the question is whether loading all 23 eagerly is the only way to provide it. Route them on demand and the capability is preserved, the cost is removed. The per-segment table above is where the rest of the fixed cost sits — `tool_instructions` is the single largest segment at 7,101 tokens. The actual user message ("echo hello") is a rounding error.
 
+### Agent memory (multi-session)
+
+Memory is a lifetime-leg claim, so it needs a different suite: **a single-session
+task cannot show a memory saving**, because the saving only appears when a later
+session would otherwise re-ask. `tasks/memory_sessions.json` holds 12 scenarios
+of 3 sessions each. Session 1 establishes facts (stack, decisions, constraints,
+contract, owners, timelines); sessions 2–3 ask questions that are only answerable
+from session 1. Every scenario carries keyword checks, so a retrieval that
+returns the *wrong* fact fails the quality guard instead of looking like a
+shorter prompt.
+
+| Arm | What it gets |
+|---|---|
+| `baseline` | each session answered from its prompt alone |
+| `treatment` | Mem0 carries the earlier sessions; what it retrieves is injected |
+
+The bill includes the memory system's own extraction calls — a tool whose write
+cost eats its read saving is a negative result, not a measured win. `answer_*`
+and `write_*` are recorded separately, and answers plus recalled memories are
+stored in metadata (truncated) so a report can be audited without re-running it.
+
+```sh
+pip install "mem0ai" "fastembed"   # embeddings run locally; no extra key
+
+cd harness
+env -u HF_TOKEN MEM0_INFER=0 \
+  token-harness run --tasks tasks/memory_sessions.json \
+  --config configs/mem0-groq.json --output report.json
+```
+
+**Two environment traps, both of which fail silently if ignored:**
+
+- `env -u HF_TOKEN` — an **expired** `HF_TOKEN` in the environment returns
+  `401 Repository Not Found` for the *public* embedding models. The models need
+  no credentials; drop the token and fastembed downloads them.
+- Groq free tier caps every usable model at **7,000–8,000 TPM/ITPM**, and mem0
+  v1.1's extraction call requests **8,160–8,802 input tokens per `add()`**
+  (measured on three models — a fixed template cost, not a payload effect). The
+  flagship extraction path therefore returns `413` here and the arm carries no
+  memory at all. `MEM0_INFER=0` measures the raw-store arm instead; the
+  extraction arm needs a provider with ≥9k TPM headroom (or
+  `MEM0_EXTRACTION_MODEL` pointing at one).
+
+Results are in [LEADERBOARD.md](LEADERBOARD.md) and
+[the writeup](../posts/agent-memory-ab.md).
+
 ### Write your own
 
 A tool plugs in as a task executor — a function

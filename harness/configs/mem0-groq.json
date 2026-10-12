@@ -1,0 +1,18 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "task_fn": "tasks.memory_mem0:run_task",
+  "confidence": 0.95,
+  "seed": 42,
+  "metadata": {
+    "harness_version": "0.1.0",
+    "description": "Agent memory A/B — multi-session scenarios, Mem0 OSS vs no memory",
+    "provider": "groq",
+    "base_url": "https://api.groq.com/openai/v1",
+    "task_fn": "tasks.memory_mem0:run_task",
+    "measurement_surface": "tokens per scenario summed over all sessions; not per request",
+    "billed": "answer channel plus the memory system's own extraction calls",
+    "quality_guard": "keyword checks per session; a wrong fact fails the guard",
+    "install": "pip install \"mem0ai\" \"fastembed\"",
+    "task_fn": "tasks.memory_mem0:run_task"
+  }
+}

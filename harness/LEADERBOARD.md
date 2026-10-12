@@ -18,7 +18,6 @@ across groups.
 | `[self-reported]` | number from the tool's own authors, baseline unstated |
 | `[negative]` | measured, and it did **not** work |
 | `[asserted]` | claim with no number — not admitted to this leaderboard |
-
 ## The leaderboard
 
 ### SWE-bench Lite — this harness
@@ -39,6 +38,35 @@ The brevity instruction saves 1,517 input tokens and 9.58 output tokens, but
 neither is statistically significant (p=0.31, p=0.52). The effect is diluted
 by fixed overhead: tool schemas (8,521 tokens) dominate the session cost.
 Wall-clock reduction (−7.23s, p=0.08) is close to significant. `[measured]`
+
+### Agent memory — multi-session suite (this harness)
+
+Different suite and different unit: 12 scenarios × 3 sessions
+(`tasks/memory_sessions.json`), measured as **tokens per scenario summed over all
+sessions**. A single-session suite cannot measure memory at all, so these rows
+are not comparable to the SWE-bench rows above.
+
+| Rank | Arm | Suite | Δ tokens-in | Δ tokens-out | Δ cost | Δ wall-clock | Quality | Grade |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **mem0, raw store** (`MEM0_INFER=0`) | Groq, 12 scenarios | **+399.25** (p<0.0001) | **−1,035.83** (p<0.0001) | −$0.01 | −0.29s (p=0.79) | **+0.292** (p=0.027) | `[measured]` |
+
+**Measurement** (2026-10-12, `openai/gpt-oss-120b` via Groq, temperature 0, 36
+sessions per arm): the raw-store arm **more than doubles input**
+(4,384 → 9,175, +109.3%) and cuts output by nearly three quarters
+(16,919 → 4,489, −73.5%), for **−35.9% total** (21,303 → 13,664). Quality
+*rises*: mean keyword-check pass rate 0.667 → 0.958. Input up, output down,
+quality up — the trade a memory system is supposed to make, and the reason the
+headline has to be a fraction over a task rather than a per-call number.
+
+**What is not measured, and it is the larger half.** These rows exclude the
+extraction path: mem0 v1.1's extraction call requests 8,160–8,802 input tokens
+per `add()` against Groq free-tier caps of 7,000–8,000, so it returns `413` and
+the arm carries no memory. The write cost is not a rounding error — 36 `add()`
+calls at ~8.2k tokens each would be roughly **295k tokens against a 21.3k-token
+baseline**, an order of magnitude more than the conversation being remembered.
+That figure is arithmetic on a measured prompt size, not a completed run, and it
+is the single most important thing to re-measure on a provider with headroom.
+See [the writeup](../posts/agent-memory-ab.md).
 
 ### SkillsBench — JetBrains' independent Claude Code harness
 

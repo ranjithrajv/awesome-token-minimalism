@@ -1,0 +1,242 @@
+[
+  {
+    "id": "mem-stack-01",
+    "title": "Project stack, deploy target, database, release cadence",
+    "sessions": [
+      {
+        "prompt": "Quick context before we start: our service 'veldt' is written in Rust, we deploy to arm64 Linux containers, we run Postgres 16 in production, and our release cadence is every other Thursday. Just confirm you've noted this."
+      },
+      {
+        "prompt": "What language is veldt written in, and what architecture do we deploy to?"
+      },
+      {
+        "prompt": "Which database does veldt use in production, and how often do we release?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["rust"], ["arm64"]] },
+      { "session": 3, "any_of": [["postgres"], ["thursday"]] }
+    ],
+    "noise": "Sessions 2 and 3 must be answered from session 1 alone; no fact is restated in the prompt."
+  },
+  {
+    "id": "mem-decisions-02",
+    "title": "Two engineering decisions with their rationale",
+    "sessions": [
+      {
+        "prompt": "Two decisions were made on the veldt project last week and I want you to have them on file. First, we chose SQLite over Redis for the local cache because Redis added an ops dependency we could not justify for a single-node tool. Second, we chose to pin all dependencies exactly, no caret ranges, because a transitive bump broke us twice. Acknowledge briefly."
+      },
+      {
+        "prompt": "What did we choose for the local cache, and why?"
+      },
+      {
+        "prompt": "What is our dependency pinning policy, and what was the reason for it?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["sqlite"], ["redis"]] },
+      { "session": 3, "any_of": [["pin"], ["caret"], ["broke"]] }
+    ],
+    "noise": "The reason (not just the choice) is the load-bearing part; retrieving the choice without the rationale is a partial answer."
+  },
+  {
+    "id": "mem-profile-03",
+    "title": "User profile: role, timezone, preferred answer format",
+    "sessions": [
+      {
+        "prompt": "About me, so you can stop asking: I'm a staff engineer on the platform team, I'm in the Europe/Lisbon timezone, and I want answers as a short bulleted list with no preamble. Acknowledge."
+      },
+      {
+        "prompt": "What timezone am I in?"
+      },
+      {
+        "prompt": "In the format you know I prefer, tell me the two things you know about how I want answers given."
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["lisbon"], ["europe"]] },
+      { "session": 3, "any_of": [["bullet"], ["preamble"]] }
+    ],
+    "noise": "Session 3 requires recalling the format preference without restating it."
+  },
+  {
+    "id": "mem-constraints-04",
+    "title": "Hard constraints that must survive to later sessions",
+    "sessions": [
+      {
+        "prompt": "Two standing constraints on veldt, please keep them: we never touch the legacy auth module because mobile still depends on it, and nobody adds a dependency without a written approval in the ADR log. Acknowledge."
+      },
+      {
+        "prompt": "Can I refactor the legacy auth module while I'm in that directory?"
+      },
+      {
+        "prompt": "I want to add the 'fast-json' package for parsing. What do I need to do first?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["no"], ["don't"], ["mobile"], ["legacy"]] },
+      { "session": 3, "any_of": [["approval"], ["adr"], ["approve"]] }
+    ],
+    "noise": "Both answers should refuse or gate. An answer that approves either request is a quality failure, not just a memory miss."
+  },
+  {
+    "id": "mem-commands-05",
+    "title": "Build, test, and lint commands with their flags",
+    "sessions": [
+      {
+        "prompt": "The veldt commands, for the record: build with 'cargo build --locked --release', run the full suite with 'cargo nextest run --profile ci', and lint with 'cargo clippy -- -D warnings'. Acknowledge."
+      },
+      {
+        "prompt": "What is the exact command to build veldt for release?"
+      },
+      {
+        "prompt": "How do I run the full test suite, and what does the lint command do on any warning?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["locked"], ["release"], ["cargo build"]] },
+      { "session": 3, "any_of": [["nextest"], ["clippy"], ["deny", "warning"]] }
+    ],
+    "noise": "Exact flags are the payload; 'cargo build' alone is a partial answer."
+  },
+  {
+    "id": "mem-bug-06",
+    "title": "A bug diagnosed earlier, with its root cause",
+    "sessions": [
+      {
+        "prompt": "We spent yesterday on the veldt intermittent 502s. Root cause: the health checker reused a connection pool that the new middleware had already closed, so every pool recycle served a dead socket. Fixed by giving the checker its own pool. Keep this on file."
+      },
+      {
+        "prompt": "What was the root cause of the 502s we saw on veldt?"
+      },
+      {
+        "prompt": "If the 502s come back next week, what is the first thing I should check?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["pool"], ["socket"], ["middleware"]] },
+      { "session": 3, "any_of": [["pool"], ["checker"], ["health"]] }
+    ],
+    "noise": "Session 3 requires transferring the earlier root cause to a new decision, not just recalling it."
+  },
+  {
+    "id": "mem-api-07",
+    "title": "An API contract: paths, fields, status codes",
+    "sessions": [
+      {
+        "prompt": "The veldt ingest API contract: POST /v1/events takes a JSON body with exactly two required fields, 'kind' (string) and 'payload' (object); it returns 202 with a Location header, 400 on a missing field, and 413 above 1 MiB. Note it."
+      },
+      {
+        "prompt": "What fields does POST /v1/events require, and what status code does it return on success?"
+      },
+      {
+        "prompt": "What is the maximum body size, and which status code signals a missing field?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["kind"], ["payload"], ["202"]] },
+      { "session": 3, "any_of": [["1 mib", "1mib"], ["413"], ["400"]] }
+    ],
+    "noise": "Success code and error codes are distinct; conflating them is a failure."
+  },
+  {
+    "id": "mem-owners-08",
+    "title": "Module ownership and escalation path",
+    "sessions": [
+      {
+        "prompt": "Ownership on veldt: Priya owns the ingest pipeline and is the escalation point for it, Marco owns the query planner, and infra questions go to the platform on-call rotation, not to an individual. Record this."
+      },
+      {
+        "prompt": "I have a question about the query planner. Who do I ask?"
+      },
+      {
+        "prompt": "The ingest pipeline is shedding load at 3am. Who gets woken up?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["marco"], ["planner"]] },
+      { "session": 3, "any_of": [["priya"], ["ingest"], ["on-call", "oncall"]] }
+    ],
+    "noise": "Names must be attached to the right subsystem; swapping them is worse than forgetting."
+  },
+  {
+    "id": "mem-artifacts-09",
+    "title": "Where artifacts were left earlier",
+    "sessions": [
+      {
+        "prompt": "For later: the veldt schema generator lives at tools/gen_schema.py, its output goes to contracts/, and the fixtures it needs are in tests/fixtures/v3. Note the paths."
+      },
+      {
+        "prompt": "Where is the schema generator, and where does it write its output?"
+      },
+      {
+        "prompt": "I want to regenerate schemas. Which directory holds the fixtures the generator needs?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["gen_schema"], ["contracts"]] },
+      { "session": 3, "any_of": [["fixtures"], ["v3"]] }
+    ],
+    "noise": "Exact path fragments are the payload; a vague 'in tools/' is a partial answer."
+  },
+  {
+    "id": "mem-timeline-10",
+    "title": "Ordered events across weeks",
+    "sessions": [
+      {
+        "prompt": "Veldt deployment history, in order: we shipped v1 on March 3rd, migrated the queue on March 18th, cut over to the new schema on April 2nd, and rolled back the cutover on April 9th because of write amplification."
+      },
+      {
+        "prompt": "What happened on April 9th, and why?"
+      },
+      {
+        "prompt": "In order: the queue migration, then what, then what?"
+      }
+    ],
+    "checks": [
+      { "session": 3, "any_of": [["rollback", "rolled back"], ["amplification"], ["schema"]] },
+      { "session": 2, "any_of": [["april 9"], ["rollback", "rolled back"]] }
+    ],
+    "noise": "Chronology is the payload; the rollback reason must be attached to the right date."
+  },
+  {
+    "id": "mem-numbers-11",
+    "title": "Numeric limits and budgets",
+    "sessions": [
+      {
+        "prompt": "Numbers for veldt, keep them: the event payload budget is 64 KiB, the p99 latency SLO is 400 ms, the ingest rate limit is 5,000 events per second per tenant, and the error budget for the quarter is 0.1%."
+      },
+      {
+        "prompt": "What is our p99 latency SLO?"
+      },
+      {
+        "prompt": "What is the per-tenant ingest rate limit, and what is the quarterly error budget?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["400"], ["ms"]] },
+      { "session": 3, "any_of": [["5,000", "5000"], ["0.1"]] }
+    ],
+    "noise": "Four similar magnitudes; retrieving the wrong one is a quality failure."
+  },
+  {
+    "id": "mem-revert-12",
+    "title": "Something tried and reverted, that must not be resurrected",
+    "sessions": [
+      {
+        "prompt": "Note this so we don't repeat it: we tried moving veldt validation into the ingest path on the 14th, it added 180 ms to p99, so we reverted it. Validation stays in the writer. Acknowledge."
+      },
+      {
+        "prompt": "Validation is slow on the write path. Should we move it into ingest to speed up writes?"
+      },
+      {
+        "prompt": "What happened when we tried moving validation into ingest?"
+      }
+    ],
+    "checks": [
+      { "session": 2, "any_of": [["no"], ["don't"], ["rejected", "reverted", "before"]] },
+      { "session": 3, "any_of": [["180"], ["revert", "reverted"], ["p99"]] }
+    ],
+    "noise": "Session 2 is the trap: the superficially attractive answer is the one already tried and reverted. Failures here are the interesting kind."
+  }
+]
