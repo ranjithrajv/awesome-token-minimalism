@@ -79,7 +79,7 @@ A decision model still reads the full state and still has a token budget (`head_
 
 ### 15. What is the independently measured token delta of codemod-versus-agent editing?
 
-Everything in [Run, don't generate](README.md#%E2%9A%99%EF%B8%8F-run-dont-generate) is either an author's characters-per-token *estimate*, a third party's un-reproduced percentage, or a vendor's own benchmark. The one genuine pair of numbers — an agent alone at **>65M tokens** against an agent calling recipes at **~30k**, Java 25 — is vendor-published for a vendor platform, with no stated task set and no replication. What would settle it: the same corpus, the same transform, a tokenizer over *both* arms, an independent harness, and the per-file re-read cost a long session imposes — the term every estimate omits. The 45/40–60/80% figures are conversion *rates*, not token counts, and nothing converts between them.
+Everything in [Leg 2 — Output](README.md#leg-2--output) is either an author's characters-per-token *estimate*, a third party's un-reproduced percentage, or a vendor's own benchmark. The one genuine pair of numbers — an agent alone at **>65M tokens** against an agent calling recipes at **~30k**, Java 25 — is vendor-published for a vendor platform, with no stated task set and no replication. What would settle it: the same corpus, the same transform, a tokenizer over *both* arms, an independent harness, and the per-file re-read cost a long session imposes — the term every estimate omits. The 45/40–60/80% figures are conversion *rates*, not token counts, and nothing converts between them.
 
 ---
 
