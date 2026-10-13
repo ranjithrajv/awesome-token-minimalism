@@ -51,7 +51,7 @@ the first. The bill for the third is the one nobody has instrumented.
 - [🧮 Break-even](#%F0%9F%A7%AE-break-even) — the arithmetic that settles those arguments
 - [Laws](#laws)
 - [Token ledger](#token-ledger) — advertised vs. measured
-- [Open problems](OPEN-PROBLEMS.md) — fifteen questions nobody has measured
+- [Open problems](OPEN-PROBLEMS.md) — sixteen questions nobody has measured
 - [Anti-patterns](ANTI-PATTERNS.md) — nineteen defaults that shipped unmeasured
 - [Related](#related) — adjacent lists, and this repo's measurement layer
 - [Contributing](#contributing)
@@ -1554,7 +1554,7 @@ useful, and not the same thing as an independent measurement.
 
 ## Open problems
 
-Fifteen real gaps, numbered so they can be cited. **Nobody has measured these**,
+Sixteen real gaps, numbered so they can be cited. **Nobody has measured these**,
 and the three most consequential are the ones where an answer would change a
 recommendation in this list rather than add a footnote to it:
 
@@ -1571,7 +1571,7 @@ recommendation in this list rather than add a footnote to it:
   published the curve — and the first term it needs, indexing cost, is reported
   nowhere by default.
 
-The other twelve — retention-bar thresholds, quality floors, the delete↔cache
+The other thirteen — retention-bar thresholds, quality floors, the delete↔cache
 crossover, semantic-cache false-hit rates, the codemod-versus-agent token delta —
 are in **[OPEN-PROBLEMS.md](OPEN-PROBLEMS.md)**. Answering one outranks any
 number you could add to an existing section.
@@ -1610,7 +1610,7 @@ Adjacent lists, linked rather than duplicated:
 - [Token Maxxing](TOKENMAXXING.md) — the negative-result catalog: cited blow-ups, from fleet-scale bills to optimizers that cost more.
 - [Showcase](SHOWCASE.md) — **for project maintainers.** Submit your own tool; the grade is yours to state. Held to the same four criteria as the main list: FOSS or a real free tier, an additive clause, a number with a baseline, and the repo linked. A showcase entry that reaches `[measured]` gets promoted to the main list.
 - [Anti-patterns](ANTI-PATTERNS.md) — nineteen defaults that shipped unmeasured, each with a receipt.
-- [Open problems](OPEN-PROBLEMS.md) — fifteen questions nobody has measured, numbered so they can be cited.
+- [Open problems](OPEN-PROBLEMS.md) — sixteen questions nobody has measured, numbered so they can be cited.
 - [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers) — the catalogs. Check your schema cost before connecting one.
 - [agentskills.io](https://agentskills.io/) · [spec](https://agentskills.io/specification) — three-tier progressive disclosure: ~100 tokens of catalog per skill, <5k instructions on activation, unlimited resources on access.
 - [AGENTS.md](https://agents.md/) — nested-scoped instructions, 60k+ projects, stewarded by the Agentic AI Foundation under the Linux Foundation.
@@ -1637,6 +1637,24 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). The short version:
    the cost." If you can't write one, it belongs in [Anti-patterns](ANTI-PATTERNS.md).
 5. **Negative results are the most valuable contributions here.** If you measured
    something that didn't work, that's a first-class entry.
+
+Three more things a contributor needs to know:
+
+- **Regenerate the index after editing the list.** [`entries.jsonl`](entries.jsonl)
+  is generated from this file by
+  [`build_entries.py`](.github/scripts/build_entries.py) — name, URL, section,
+  grade, and date per entry. It exists so a qualification question ("which of
+  these are `[measured]`?") costs ~10k tokens instead of the list's ~37k. It is
+  the repo's own thesis applied to itself: hold the identifier, load the payload
+  on demand. Hand-editing it fails CI, deliberately.
+- **Maintainers: [SHOWCASE.md](SHOWCASE.md) is for you.** Submit your own tool
+  with the grade stated honestly — `[self-reported]` there is a normal, labelled
+  outcome, not a rejection. If you have a number but no harness, the repo ships
+  one and the runbook is [harness/docs/submit-a-run.md](harness/docs/submit-a-run.md).
+  An entry that reaches `[measured]` gets promoted here.
+- **Link rot has one home.** `.github/scripts/link-exceptions.txt` holds the
+  hosts that reject automated clients, and a weekly sweep files dead links into
+  a single `link-rot` issue rather than failing your PR.
 
 ---
 

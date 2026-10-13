@@ -23,4 +23,5 @@ Start with [the three legs](README.md#the-three-legs) — input, output, lifetim
 - [Submit a measurement](harness/docs/submit-a-run.md): the runbook for a number that survives review.
 - [token-harness](harness/README.md): the paired A/B rig this repo ships.
 - [Leaderboard](harness/LEADERBOARD.md): measured results, grouped by harness — never compare across groups.
-- [Context profiler](harness/docs/context-profiler.md): per-turn context composition, independently auditable.
+- [Pinned CLI output format](harness/docs/copilot-cli-format.md): the format the full-agent-loop executor depends on, version-pinned so breakage is detectable.
+- [Entry index](entries.jsonl): name, URL, section, grade, and date for every graded entry — the qualification pass without reading the list. Generated from the README and gated in CI.

@@ -23,6 +23,10 @@ repository-code: https://github.com/ranjithrajv/awesome-token-minimalism
 url: https://github.com/ranjithrajv/awesome-token-minimalism
 license: CC0-1.0
 date-released: "2026-10-05"
+# Added with the entry index and the weekly link sweep (2026-10): a citation that
+# names a version can point at a tag, and can say which of those features the
+# snapshot predates.
+version: "1.1.0"
 keywords:
   - token minimalism
   - token efficiency

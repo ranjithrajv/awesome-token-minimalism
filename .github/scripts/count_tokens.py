@@ -68,6 +68,20 @@ FILES = (
 # to keep the always-loaded surface honest, and the always-loaded README is
 # exactly what it was before this PR.
 BUDGET = 64_000
+# On-demand payload, printed for visibility but *not* charged to the budget.
+#
+# `entries.jsonl` is the machine-readable index over the entries -- name, URL,
+# section, grade, date -- generated from README.md by build_entries.py and kept
+# in sync by CI. It is excluded for the same reason code and tests are excluded
+# further up: it is loaded when an agent asks a qualification question, not on
+# every turn. An agent that asks spends ~10k tokens (chars/4) on it instead of
+# ~37k on the README; an agent that does not ask spends nothing.
+#
+# That is a trade worth stating rather than hiding, because the alternative --
+# metering it into the always-loaded ceiling -- would push the badge up by 10k
+# for a file most readers never load. The number is printed below the total so
+# nobody has to guess what the exclusion costs.
+ON_DEMAND = ("entries.jsonl",)
 BADGE_PATH = (".github", "badges", "tokens.json")
 
 
@@ -90,6 +104,10 @@ def main() -> int:
         total += n
         print(f"  {name:<18} {n:>6}")
     print(f"  {'TOTAL':<18} {total:>6}  ({method})")
+
+    for name in ON_DEMAND:
+        n, _ = count((root / name).read_text(encoding="utf-8"))
+        print(f"  {'+ ' + name:<18} {n:>6}  (on-demand index, not metered above)")
 
     badge = {
         "schemaVersion": 1,
