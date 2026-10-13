@@ -12,7 +12,7 @@
 {"name": "ctxlens", "url": "https://github.com/dabit3/ctxlens", "urls": ["https://github.com/dabit3/ctxlens"], "section": "Leg 0 — Measure", "grades": ["[self-reported]"], "dates": [], "line": 471}
 {"name": "ctxbudget", "url": "https://github.com/davidcjw/ctxbudget", "urls": ["https://github.com/davidcjw/ctxbudget"], "section": "Leg 0 — Measure", "grades": ["[self-reported]"], "dates": [], "line": 472}
 {"name": "skill-context-doctor", "url": "https://github.com/aptratcn/skill-context-doctor", "urls": ["https://github.com/aptratcn/skill-context-doctor"], "section": "Leg 0 — Measure", "grades": ["[self-reported]"], "dates": [], "line": 473}
-{"name": "ccusage", "url": "https://github.com/ccusage/ccusage", "urls": ["https://github.com/ccusage/ccusage"], "section": "Leg 0 — Measure", "grades": ["[measured]"], "dates": [], "line": 474}
+{"name": "ccusage", "url": "https://github.com/ccusage/ccusage", "urls": ["https://github.com/ccusage/ccusage"], "section": "Leg 0 — Measure", "grades": ["[measured]/[self-reported]"], "dates": ["2026-10"], "line": 474}
 {"name": "Claude Code `/context` breakdown", "url": "https://github.com/Beaulewis1977/claude-code-context-command", "urls": ["https://github.com/Beaulewis1977/claude-code-context-command"], "section": "Leg 0 — Measure", "grades": ["[self-reported]"], "dates": [], "line": 475}
 {"name": "Context rot (Chroma, 2025)", "url": "https://research.trychroma.com/context-rot", "urls": ["https://research.trychroma.com/context-rot"], "section": "📏 Effective context", "grades": ["[measured]"], "dates": [], "line": 500}
 {"name": "RULER (NVIDIA)", "url": "https://github.com/NVIDIA/RULER", "urls": ["https://github.com/NVIDIA/RULER"], "section": "📏 Effective context", "grades": ["[measured]"], "dates": [], "line": 502}
