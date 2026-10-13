@@ -196,7 +196,8 @@ only" measured ≈60% output reduction on its own.
 Tokens charged for non-text input. Images, PDFs, audio,
 and video are tokenized by dimension or duration, not by file size. A 1MP image
 is ~1,334 tokens on Claude, ~765 on GPT-4o high-detail, ~258 on Gemini — a
-~5× spread for the same pixels.
+~5× spread across those modes, widening to ~16× once `detail: low` (85) is
+included.
 → [Leg 1 · Multimodal](README.md#%F0%9F%96%BC%EF%B8%8F-multimodal-tokens)
 
 ### Prefill / TTFT

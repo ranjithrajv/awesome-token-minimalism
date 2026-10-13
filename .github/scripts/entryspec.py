@@ -24,7 +24,13 @@ GRADE_TAG = r"(?:" + "|".join(GRADES) + r")"
 GRADE_RE = re.compile(rf"\[{GRADE_TAG}\](?:/\[{GRADE_TAG}\])*")
 # "2026-07", "(2026-07)", "2026-07-01". A bare year is deliberately *not* a
 # stamp: it cannot go stale, so it cannot prompt a re-run.
-DATE_RE = re.compile(r"\b(20[0-9]{2})-([01][0-9])\b")
+#
+# The leading `(?<![\w-])` keeps a versioned identifier out of the stamp set.
+# The beta header `context-management-2025-06-27` contains `2025-06`, but it is
+# a name, not a measurement date; matching it flagged a fresh entry as a
+# 16-month-old stamp. A real stamp is never preceded by a word character or a
+# hyphen.
+DATE_RE = re.compile(r"(?<![\w-])(20[0-9]{2})-([01][0-9])\b")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
 
 

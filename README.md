@@ -3,7 +3,7 @@
 [![Awesome](https://awesome.re/badge.svg)](https://awesome.re)
 [![Check: annotations, anchors, links](https://github.com/ranjithrajv/awesome-token-minimalism/actions/workflows/check.yml/badge.svg)](https://github.com/ranjithrajv/awesome-token-minimalism/actions/workflows/check.yml)
 [![License: CC0-1.0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)](LICENSE)
-[![List tokens](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ranjithrajv/awesome-token-minimalism/main/.github/badges/tokens.json)](.github/scripts/count_tokens.py)
+[![Docs tokens](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ranjithrajv/awesome-token-minimalism/main/.github/badges/tokens.json)](.github/scripts/count_tokens.py)
 
 > **Minimal in, minimal out, minimal forever.**
 > Papers, tools, and patterns for spending fewer tokens on all three sides of an LLM call.
@@ -774,7 +774,7 @@ and the second one quietly spends your cache.
 Strong numbers — and it spends your cache to get them.
 
 - **[Anthropic: managing context on the Claude Developer Platform](https://claude.com/blog/context-management)** — the measured case: **context editing alone +29%** agentic-search performance over baseline; **memory tool + context editing +39%**; and on a **100-turn web search eval, −84% token consumption** while completing workflows that would otherwise fail on context exhaustion. `[measured]`
-- **[Context editing API](https://platform.claude.com/docs/en/build-with-claude/context-editing)** — beta header `context-management-2025-06-27`; strategies `clear_tool_uses_20250919` and `clear_thinking_20251015`. Tunable `trigger` (default 100k input tokens), `keep`, `exclude_tools`, `clear_tool_inputs`. `[measured]`
+- **[Context editing API](https://platform.claude.com/docs/en/build-with-claude/context-editing)** — beta header `context-management-2025-06-27`; strategies `clear_tool_uses_20250919` and `clear_thinking_20251015`. Tunable `trigger` (default 100k input tokens), `keep`, `clear_at_least`, `exclude_tools`, `clear_tool_inputs`. `[measured]` — beta header, strategy names, and knobs re-verified against the live docs 2026-10-13.
   ⚠️ **Three documented sharp edges, worth reading before enabling:**
   - *"Tool clearing will invalidate your cache if your prefixes contain your tools."*
   - Thinking blocks: **kept** → cache preserved; **cleared** → cache invalidated at that point. You are choosing between window space and cache hits, explicitly.
@@ -1398,7 +1398,7 @@ studies put `f` near 0.4, so **~60% of a uniform reasoning budget buys nothing.*
 
 ### 6. Multimodal equivalence
 
-Same pixels, ~5× spread. Per image:
+Same pixels, ~16× spread once `detail: low` is in the set. Per image:
 
 | Provider | Formula | 1024×1024 |
 |---|---|---|
@@ -1619,7 +1619,7 @@ Adjacent lists, linked rather than duplicated:
 - [Awesome Context Engineering](https://github.com/jihoo-kim/awesome-context-engineering) · [decispherhq](https://decispherhq.github.io/awesome-context-engineering) — broader and capability-shaped. Good neighbors; this list is budget-shaped.
 - [Awesome Multimodal Token Compression](https://github.com/cokeshao/Awesome-Multimodal-Token-Compression) — the layer below [Multimodal tokens](#%F0%9F%96%BC%EF%B8%8F-multimodal-tokens): visual-token pruning, merging, and learned compression *inside* the vision encoder of open-weight MLLMs, indexed per modality (image / video / audio / omni) with training-free vs training-based tags and a searchable database. Companion to a TMLR 2026 survey ([arXiv:2507.20198](https://arxiv.org/abs/2507.20198)), ~400 papers. Not a substitute: it moves prefill compute and latency, not the token count on your bill, so it belongs to the serve-side leg rather than Leg 1. The index carries no compression ratios — grade the underlying paper before quoting a number.
 - [awesome-cpu-first-ai](https://github.com/ranjithrajv/awesome-cpu-first-ai) — the **supply side of the same equation.** Where this list reduces the numerator (tokens spent), that one reduces the denominator (cost per token) by starting on CPU and requiring a GPU to be justified. Not a substitute — the two compose multiplicatively — and not a duplicate: it holds the hardware-side energy data this list defers to, including power-per-inference (Ampere Altra at **3.6× less power than an A10, 5.6× vs a T4** on Whisper), PUE arithmetic, WUE water analysis, carbon by grid region, and a runnable cost calculator. Note the trade it makes explicitly: **CPU-first buys money and energy by spending latency**, where token minimalism saves all three.
-- [harness/](harness/) · [posts/](posts/) — this repo's own measurement layer: the paired A/B rig ([design](harness/README.md), [leaderboard](harness/LEADERBOARD.md)) and the [result writeups](posts/harness-results.md). Run a tool through it and publish the number.
+- [harness/](harness/) · [posts/](posts/README.md) — this repo's own measurement layer: the paired A/B rig ([design](harness/README.md), [leaderboard](harness/LEADERBOARD.md)) and the [result writeups](posts/README.md). Run a tool through it and publish the number.
 
 ---
 
@@ -1644,10 +1644,10 @@ Three more things a contributor needs to know:
 - **Regenerate the index after editing the list.** [`entries.jsonl`](entries.jsonl)
   is generated from this file by
   [`build_entries.py`](.github/scripts/build_entries.py) — name, URL, section,
-  grade, and date per entry. It exists so a qualification question ("which of
-  these are `[measured]`?") costs ~10k tokens instead of the list's ~37k. It is
-  the repo's own thesis applied to itself: hold the identifier, load the payload
-  on demand. Hand-editing it fails CI, deliberately.
+  grade, and the date where an entry carries one. It exists so a qualification
+  question ("which of these are `[measured]`?") costs ~10k tokens instead of the
+  list's ~37k. It is the repo's own thesis applied to itself: hold the
+  identifier, load the payload on demand. Hand-editing it fails CI, deliberately.
 - **Maintainers: [SHOWCASE.md](SHOWCASE.md) is for you.** Submit your own tool
   with the grade stated honestly — `[self-reported]` there is a normal, labelled
   outcome, not a rejection. If you have a number but no harness, the repo ships

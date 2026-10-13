@@ -19,9 +19,15 @@ dates; the count can only fall. A ceiling rather than a target, same idiom as
 the prose budget in count_tokens.py -- it stops the 149 from becoming 160
 without anyone having to notice.
 
+Undated entries are reported as *one* file-level annotation, not one per entry:
+150 annotations on every PR is the per-turn tax this repo argues against, and it
+trains reviewers to ignore the gate. `--report` emits the full roster as
+markdown for the weekly `date-rot` issue, which is where it gets triaged.
+
 Usage:
     python check_stamps.py README.md
     python check_stamps.py --strict README.md
+    python check_stamps.py --report README.md TOKENMAXXING.md RESOURCES.md
 """
 
 from __future__ import annotations
@@ -72,69 +78,136 @@ def entry_stamps(lines: list[str]) -> list[tuple[int, str, list[str], list[str]]
     return out
 
 
-def check_stamps(lines: list[str], path: str) -> int:
+def classify(
+    lines: list[str], path: str
+) -> tuple[int, int, list[tuple[int, int, list[str]]], list[int]]:
+    """Split entries into (total, fresh, stale, undated).
+
+    `stale` rows are (line_no, age_in_months, grades); `undated` is line numbers.
+    Shared by the gate and the `--report` body so the two cannot disagree.
+    """
+    within = 0
+    stale: list[tuple[int, int, list[str]]] = []
+    missing: list[int] = []
     entries = entry_stamps(lines)
-    if not entries:
+    for n, _line, grades, dates in entries:
+        if not dates:
+            missing.append(n)
+            continue
+        age = max(months_old(int(y), int(m)) for y, m in dates)
+        if age > STALE_MONTHS:
+            stale.append((n, age, grades))
+        else:
+            within += 1
+    return len(entries), within, stale, missing
+
+
+def check_stamps(lines: list[str], path: str) -> int:
+    total, within, stale, missing = classify(lines, path)
+    if not total:
         print(f"{path}: no graded entries to stamp")
         return 0
 
-    missing = within = stale = 0
-    for n, line, grades, dates in entries:
-        if not dates:
-            missing += 1
-            print(
-                f"::warning file={path},line={n}::graded entry carries no date "
-                f"({' '.join(grades)}); "
-                f"AGENTS.md asks for model, harness, date, and n"
-            )
-            continue
-        ages = [months_old(int(y), int(m)) for y, m in dates]
-        if max(ages) > STALE_MONTHS:
-            stale += 1
-            print(
-                f"::warning file={path},line={n}::stamp is {max(ages)} months old "
-                f"(>{STALE_MONTHS}); re-run the measurement and say what changed"
-            )
-        else:
-            within += 1
-
-    total = len(entries)
     print(
         f"{path}: {total} graded entries, "
         f"{within} within {STALE_MONTHS} months, "
-        f"{stale} stale, {missing} undated"
+        f"{len(stale)} stale, {len(missing)} undated"
     )
+
+    # Stale stamps are few and each is actionable, so they stay per-entry.
+    for n, age, grades in stale:
+        print(
+            f"::warning file={path},line={n}::stamp is {age} months old "
+            f"(>{STALE_MONTHS}); re-run the measurement and say what changed"
+        )
+
+    # Undated entries run to the hundreds, and one annotation each is the
+    # per-turn tax this repo argues against. One file-level annotation names
+    # the count and a sample; the weekly date sweep carries the full roster.
+    if missing:
+        shown = ", ".join(str(n) for n in missing[:12])
+        tail = "" if len(missing) <= 12 else f", +{len(missing) - 12} more"
+        print(
+            f"::warning file={path}::{len(missing)} undated entries "
+            f"(lines {shown}{tail}); triaged in the weekly date-rot issue"
+        )
+
     # The ratchet. Undated count is the quantity that can only be improved by
     # editing the entry, so a ceiling here is a floor on attention.
     ceiling = MAX_UNDATED.get(pathlib.Path(path).name)
-    if ceiling is not None and missing > ceiling:
+    if ceiling is not None and len(missing) > ceiling:
         print(
-            f"::error file={path}::{missing} undated entries, over the {ceiling} "
-            f"ceiling. Add the dates, and lower MAX_UNDATED in this file in the "
-            f"same PR -- the ceiling is a ratchet, not a target."
+            f"::error file={path}::{len(missing)} undated entries, over the "
+            f"{ceiling} ceiling. Add the dates, and lower MAX_UNDATED in this "
+            f"file in the same PR -- the ceiling is a ratchet, not a target."
         )
         return 1
-    if ceiling is not None and missing <= ceiling:
-        headroom = ceiling - missing
+    if ceiling is not None and len(missing) <= ceiling:
+        headroom = ceiling - len(missing)
         if headroom:
             print(
                 f"{path}: {headroom} under the {ceiling} ceiling -- lower "
-                f"MAX_UNDATED to {missing} to lock the gain in"
+                f"MAX_UNDATED to {len(missing)} to lock the gain in"
             )
     if FAIL_ON_STALE and stale:
-        print(f"::error file={path}::{stale} stale stamp(s) over {STALE_MONTHS} months")
+        print(
+            f"::error file={path}::{len(stale)} stale stamp(s) over "
+            f"{STALE_MONTHS} months"
+        )
         return 1
     return 0
 
 
+def build_report(paths: list[str]) -> str:
+    """Markdown date-coverage report for the weekly date-rot issue."""
+    rows: list[tuple[str, int, int, int, int, int | None]] = []
+    stale_all: list[tuple[str, int, int, str]] = []
+    for path in paths:
+        name = pathlib.Path(path).name
+        lines = pathlib.Path(path).read_text(encoding="utf-8").splitlines()
+        total, within, stale, missing = classify(lines, path)
+        if not total:
+            continue
+        rows.append((name, total, within, len(stale), len(missing), MAX_UNDATED.get(name)))
+        for n, age, grades in stale:
+            stale_all.append((name, n, age, " ".join(grades)))
+
+    out = ["## Date coverage", ""]
+    out.append("| File | Graded | Fresh | Stale | Undated | Ceiling |")
+    out.append("|---|---|---|---|---|---|")
+    for name, total, within, n_stale, n_missing, ceiling in rows:
+        out.append(
+            f"| `{name}` | {total} | {within} | {n_stale} | {n_missing} | "
+            f"{ceiling if ceiling is not None else '—'} |"
+        )
+    out.append("")
+    if stale_all:
+        out.append(f"### Stale stamps (> {STALE_MONTHS} months)")
+        out.append("")
+        for name, n, age, grades in stale_all:
+            out.append(f"- `{name}:{n}` — {age} months old ({grades})")
+        out.append("")
+    else:
+        out.append("No stale stamps. ")
+        out.append("")
+    out.append(
+        "An undated entry is the repo's biggest credibility gap: a number with no "
+        "date cannot be re-run. Adding a date — or lowering the `MAX_UNDATED` "
+        "ceiling — is a high-value PR. See `AGENTS.md` for the stamp rules."
+    )
+    return "\n".join(out)
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
-    strict = "--strict" in sys.argv
     paths = [a for a in args if not a.startswith("--")]
     if not paths:
         print(__doc__)
         raise SystemExit(2)
-    if strict:
+    if "--report" in args:
+        print(build_report(paths))
+        raise SystemExit(0)
+    if "--strict" in args:
         # One-invocation override of the module constant, so a PR can be checked
         # strictly without the file having to carry the stricter policy yet.
         globals()["FAIL_ON_STALE"] = True

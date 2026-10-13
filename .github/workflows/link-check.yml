@@ -34,6 +34,12 @@ jobs:
           python .github/scripts/check_annotations.py --urls OPEN-PROBLEMS.md >> /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls SHOWCASE.md >> /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls llms.txt >> /tmp/urls.txt
+          # The result writeups behind the leaderboard, linked from the posts
+          # index: same one-home-for-link-rot rule, lower traffic.
+          python .github/scripts/check_annotations.py --urls posts/README.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls posts/the-seven-word-baseline.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls posts/harness-results.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls posts/agent-memory-ab.md >> /tmp/urls.txt
 
       - name: Check external links resolve
         run: |

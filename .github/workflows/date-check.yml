@@ -1,0 +1,83 @@
+---
+name: date_check_weekly
+
+# The stamp check runs on every PR, but it aggregates the undated entries into a
+# single file-level annotation rather than hundreds. This is where the full
+# roster is triaged: which stamps have gone stale, and how many entries carry no
+# date at all, in one issue that only changes when the dates do. Mirror of
+# link_check_weekly, and the counterpart to the per-PR gate.
+
+on:
+  schedule:
+    - cron: "23 6 * * 1"  # Mondays, 06:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sweep:
+    name: Weekly date sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build the date-coverage report
+        run: |
+          python .github/scripts/check_stamps.py --report \
+            README.md TOKENMAXXING.md RESOURCES.md > /tmp/date-rot.md
+          cat /tmp/date-rot.md
+
+      - name: Report into one labelled issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const body = fs.readFileSync('/tmp/date-rot.md', 'utf8')
+            const label = 'date-rot'
+            const title = 'Date health: stale and undated stamps'
+
+            // Don't assume the label exists: a fresh fork or a deleted label
+            // should not turn the sweep into a 422.
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner, repo: context.repo.repo, name: label,
+              })
+            } catch (err) {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                name: label, color: 'fbca04',
+                description: 'Entries with a stale or missing evidence stamp',
+              })
+            }
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+              per_page: 5,
+            })
+            if (existing.length) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing[0].number,
+                title,
+                body,
+              })
+              core.notice(`updated #${existing[0].number}`)
+            } else {
+              const { data: created } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [label],
+              })
+              core.notice(`created #${created.number}`)
+            }

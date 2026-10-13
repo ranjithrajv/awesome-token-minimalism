@@ -183,8 +183,10 @@ depends on, and they are cited as sources constantly.
 3. Link rot: if you're updating a stale entry, say what changed and when.
 4. Numbers without a stamp decay within weeks in this field. If you're
    re-checking a `measured` entry, that's a high-value PR — send it.
-   `check_stamps.py` warns on entries with no date and on stamps older than
-   twelve months; it annotates rather than fails until coverage justifies it.
+   `check_stamps.py` reports undated entries as one aggregated annotation and
+   flags stamps older than twelve months; the weekly date sweep collects the
+   full roster in a single `date-rot` issue. It annotates rather than fails
+   until coverage justifies enforcing.
 5. Put the grade at the end of the entry's **first line**. A split verdict uses
    a compound tag (`[measured]/[asserted]`). The linter only reads that line,
    and so does anyone skimming the list.

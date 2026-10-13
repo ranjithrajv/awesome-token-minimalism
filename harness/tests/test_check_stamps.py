@@ -47,6 +47,22 @@ def test_month_stamp_is_parseable():
     assert dates == [("2026", "07")]
 
 
+def test_versioned_identifier_is_not_a_stamp():
+    """A versioned identifier is a name, not a measurement date.
+
+    The beta header `context-management-2025-06-27` contains `2025-06`, and
+    matching it flagged a fresh entry as a sixteen-month-old stamp.
+    """
+    lines = [
+        (
+            "- **[API](https://example.com)** — beta header "
+            "`context-management-2025-06-27`. `[measured]` — verified 2026-10-13."
+        )
+    ]
+    (_n, _line, _grades, dates) = check_stamps.entry_stamps(lines)[0]
+    assert dates == [("2026", "10")]
+
+
 def test_months_old():
     assert check_stamps.months_old(2026, 7, today=date(2026, 10, 1)) == 3
     assert check_stamps.months_old(2025, 1, today=date(2026, 10, 1)) == 21

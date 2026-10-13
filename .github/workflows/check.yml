@@ -31,8 +31,13 @@ jobs:
           # fragment used to be invisible to every check, which is how
           # llms.txt shipped pointing at a doc that did not exist.
           python .github/scripts/check_annotations.py --anchors-only llms.txt
-          # The date gate: warns, never fails, until entry coverage justifies
-          # enforcing. Warnings still surface as PR annotations.
+          # The posts index: the result writeups, linked from the README and
+          # llms.txt. Anchors only -- it is an index, not a graded list -- but
+          # its relative links to the writeups still have to resolve.
+          python .github/scripts/check_annotations.py --anchors-only posts/README.md
+          # The date gate. Undated entries are one aggregated file annotation,
+          # not one per entry; the weekly date-rot sweep carries the full list.
+          # It warns rather than fails until entry coverage justifies enforcing.
           python .github/scripts/check_stamps.py README.md RESOURCES.md TOKENMAXXING.md
 
   links:
@@ -52,9 +57,13 @@ jobs:
           python .github/scripts/check_annotations.py --urls ANTI-PATTERNS.md >> /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls OPEN-PROBLEMS.md >> /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls SHOWCASE.md >> /tmp/urls.txt
-          # The machine-readable index an agent reads before deciding what to
-          # load: its links are as load-bearing as the list's.
           python .github/scripts/check_annotations.py --urls llms.txt >> /tmp/urls.txt
+          # The result writeups, linked from the posts index. Low-traffic, but
+          # the same one-home-for-link-rot rule applies.
+          python .github/scripts/check_annotations.py --urls posts/README.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls posts/the-seven-word-baseline.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls posts/harness-results.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls posts/agent-memory-ab.md >> /tmp/urls.txt
           echo "$(wc -l < /tmp/urls.txt) links collected"
       - name: Check external links resolve
         run: |
@@ -95,11 +104,17 @@ jobs:
   test:
     name: Harness tests and lint
     runs-on: ubuntu-latest
+    strategy:
+      # This matrix used to live in harness/.github/workflows/ci.yml, which
+      # GitHub never runs: workflows are only read from the repository root.
+      # Folded in here so the Python-version coverage is real rather than inert.
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
       - name: Install the harness with its dev extras
         run: pip install -e "./harness[dev]"
       - name: Run harness unit tests
@@ -109,6 +124,9 @@ jobs:
         run: python -m pytest harness/tests -q
       - name: Lint
         run: ruff check harness/src harness/tasks harness/tests .github/scripts
+      - name: CLI smoke test
+        # The entry point installs and parses, with no provider key required.
+        run: token-harness --help
 
   tokens:
     name: List token budget

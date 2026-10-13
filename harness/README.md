@@ -260,6 +260,14 @@ See `tasks/copilot_cli.py` for a full agent-loop executor and
 }
 ```
 
+## CI
+
+The checks run from the repository root, not from here:
+[`.github/workflows/check.yml`](../.github/workflows/check.yml) installs this
+package with its dev extras, runs `pytest harness/tests`, lints with `ruff`, and
+smoke-tests the CLI across Python 3.10–3.13. A workflow file under
+`harness/.github/` would never be read by GitHub Actions, so there is none.
+
 ## License
 
 CC0 1.0, same as the list.

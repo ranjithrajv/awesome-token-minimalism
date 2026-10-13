@@ -68,10 +68,13 @@ FILES = (
 # to keep the always-loaded surface honest, and the always-loaded README is
 # exactly what it was before this PR.
 BUDGET = 64_000
+# A soft ceiling, so growth toward BUDGET is visible on a PR before it trips the
+# hard gate. The gauge the repo raises deliberately; this only surfaces it early.
+WARN_AT = 63_000
 # On-demand payload, printed for visibility but *not* charged to the budget.
 #
 # `entries.jsonl` is the machine-readable index over the entries -- name, URL,
-# section, grade, date -- generated from README.md by build_entries.py and kept
+# section, grade, and any date -- generated from README.md by build_entries.py and kept
 # in sync by CI. It is excluded for the same reason code and tests are excluded
 # further up: it is loaded when an agent asks a qualification question, not on
 # every turn. An agent that asks spends ~10k tokens (chars/4) on it instead of
@@ -111,13 +114,23 @@ def main() -> int:
 
     badge = {
         "schemaVersion": 1,
-        "label": "list tokens",
+        "label": "docs tokens",
         "message": f"{total / 1000:.1f}k",
         "color": "blue",
     }
     out = root.joinpath(*BADGE_PATH)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(badge) + "\n", encoding="utf-8")
+
+    # `docs tokens`, not `list tokens`: the meter covers the whole annotated doc
+    # set, while the README's own "~37k" is the README alone. Two different
+    # numbers, so the badge says which one it is.
+    if total > WARN_AT:
+        print(
+            f"::warning::list prose is {total} tokens, "
+            f"{BUDGET - total} under the {BUDGET} hard budget -- trim, or raise "
+            f"BUDGET deliberately in a PR"
+        )
 
     if "--fail-over" in sys.argv and total > BUDGET:
         print(f"::error::list prose is {total} tokens, over the {BUDGET} budget")

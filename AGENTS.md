@@ -15,10 +15,10 @@ An awesome list plus its own measurement layer. The content docs are
 The rest is scaffolding and metadata (`CITATION.cff`, `LICENSE`).
 
 `README.md` is the index and carries the entries; `entries.jsonl` is the
-generated index over those entries — name, URL, section, grade, date, one line
-each — so a qualification question costs ~10k tokens instead of the list's
-~37k. Regenerate it with `.github/scripts/build_entries.py`; never hand-edit it,
-CI diffs it.
+generated index over those entries — name, URL, section, grade, and any date,
+one line each — so a qualification question costs ~10k tokens instead of the
+list's ~37k. Regenerate it with `.github/scripts/build_entries.py`; never
+hand-edit it, CI diffs it.
 `ANTI-PATTERNS.md` and
 `OPEN-PROBLEMS.md` are the two catalogs it points at (nineteen unmeasured
 defaults, sixteen unmeasured questions), one file each, no details toggle.
@@ -64,11 +64,13 @@ run with `--anchors-only` — the same mode as `GLOSSARY.md`. Do not add
 `--allow-empty` to force them through `check_entries`; there is nothing there to
 grade.
 
-**Dates are the fourth check.** `check_stamps.py` warns on undated entries and on
-stamps older than twelve months, and *fails* when a file's undated count goes
-over the ceiling in `MAX_UNDATED`. Lower that ceiling in the same PR that adds
-the dates — it is a ratchet, not a target, and the number it is holding (150 of
-154 README entries) is the repo's biggest credibility gap.
+**Dates are the fourth check.** `check_stamps.py` reports undated entries as one
+file-level annotation rather than one per entry, and *fails* when a file's
+undated count goes over the ceiling in `MAX_UNDATED`; the weekly date sweep opens
+a `date-rot` issue so the roster is triaged in one place instead of annotating
+every PR. Lower that ceiling in the same PR that adds the dates — it is a
+ratchet, not a target, and the number it is holding (149 of 154 README entries)
+is the repo's biggest credibility gap.
 
 **Relative links are checked, not assumed.** Every `](path)` that points inside
 this repo must resolve, with or without a `#fragment`. Before that check existed,
