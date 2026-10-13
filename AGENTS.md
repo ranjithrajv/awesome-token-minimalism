@@ -45,6 +45,7 @@ python .github/scripts/check_annotations.py TOKENMAXXING.md           # negative
 python .github/scripts/check_annotations.py --anchors-only ANTI-PATTERNS.md  # defaults catalog
 python .github/scripts/check_annotations.py --anchors-only OPEN-PROBLEMS.md  # gaps catalog
 python .github/scripts/check_annotations.py --allow-empty SHOWCASE.md # maintainer submissions
+python .github/scripts/check_stamps.py README.md              # stamps: stale or undated
 python .github/scripts/check_annotations.py --urls README.md          # link extraction
 ```
 
@@ -52,6 +53,10 @@ The two catalogs carry receipts and cross-links but no `- **[` entries, so they
 run with `--anchors-only` — the same mode as `GLOSSARY.md`. Do not add
 `--allow-empty` to force them through `check_entries`; there is nothing there to
 grade.
+
+**Dates are the fourth check.** `check_stamps.py` warns — never fails — on undated
+entries and stamps older than twelve months; flip `FAIL_ON_STALE` when coverage
+justifies it.
 
 The script runs the same gate as CI and checks four things: evidence grades,
 linked entries, same-file `#anchor` targets, and cross-file `other.md#anchor`

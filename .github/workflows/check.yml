@@ -26,6 +26,9 @@ jobs:
           # Maintainer submissions: grades are enforced once entries exist, but
           # an empty showcase is the current state, not a failure.
           python .github/scripts/check_annotations.py --allow-empty SHOWCASE.md
+          # The date gate: warns, never fails, until entry coverage justifies
+          # enforcing. Warnings still surface as PR annotations.
+          python .github/scripts/check_stamps.py README.md RESOURCES.md TOKENMAXXING.md
 
   links:
     name: Link health

@@ -1,0 +1,26 @@
+# Awesome Token Minimalism
+
+> Minimal in, minimal out, minimal forever. Papers, tools, and patterns for spending fewer tokens on all three sides of an LLM call, with an evidence grade on every entry.
+
+Start with [the three legs](README.md#the-three-legs) — input, output, lifetime — and [what counts as bloat](README.md#what-counts-as-bloat): the enemy is an unmeasured cost, never a capability.
+
+## Always loaded
+
+- [Awesome Token Minimalism](README.md): the list proper, and the index for the rest.
+- [Contributing](CONTRIBUTING.md): the grade vocabulary and the additive clause.
+
+## On demand
+
+- [Anti-patterns](ANTI-PATTERNS.md): nineteen defaults that shipped unmeasured, each with a receipt.
+- [Open problems](OPEN-PROBLEMS.md): what nobody has measured.
+- [Token Maxxing](TOKENMAXXING.md): the negative-result catalog — the blow-ups, with their numbers.
+- [Glossary](GLOSSARY.md): every load-bearing term, defined once.
+- [Resources](RESOURCES.md): external frameworks, essays, and analysis.
+- [Showcase](SHOWCASE.md): for maintainers submitting their own tool.
+
+## Measure it yourself
+
+- [Submit a measurement](harness/docs/submit-a-run.md): the runbook for a number that survives review.
+- [token-harness](harness/README.md): the paired A/B rig this repo ships.
+- [Leaderboard](harness/LEADERBOARD.md): measured results, grouped by harness — never compare across groups.
+- [Context profiler](harness/docs/context-profiler.md): per-turn context composition, independently auditable.

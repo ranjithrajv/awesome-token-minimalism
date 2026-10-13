@@ -37,9 +37,9 @@ If token 3 of a test file costs more than token 1 (because later tokens only get
 
 tokens-per-task is better than tokens-per-request, but it requires knowing the re-fetch rate, which is unmeasured almost everywhere.
 
-### 5. Nobody has an independently audited context-window profiler
+### 5. Which context-window profiler is independently audited, and by what diff?
 
-Most of [Leg 0](README.md#leg-0--measure) is `[self-reported]`; the `[measured]` entries there audit instruction files and bills, not per-turn context composition.
+Most of [Leg 0](README.md#leg-0--measure) is `[self-reported]`; the `[measured]` entries audit instruction files and bills, not per-turn context composition. This repo now ships a baseline — [`token-harness profile`](../harness/docs/context-profiler.md), which reads an agent's own event stream and reports the window turn by turn — so the question is no longer whether one exists but **which third-party profiler agrees with it, and where the boundaries differ.** [`contextlens-profiler`](https://pypi.org/project/contextlens-profiler/) is the candidate: listed `[measured]` here, describing exactly this capability, so either the entry is graded generously or the question was wrong. An audit is a diff, not an opinion.
 
 ### 6. Is per-model brevity tuning worth it?
 

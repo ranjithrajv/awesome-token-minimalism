@@ -29,6 +29,10 @@ FILES = (
     "RESOURCES.md",
     "CONTRIBUTING.md",
     "AGENTS.md",
+    # The index an agent reads before it decides what to load. Metered for the
+    # same reason the catalogs are: it is prose an agent loads, even though it
+    # is the smallest file here.
+    "llms.txt",
     # Split out of the README as one-file-each catalogs. Metered here rather
     # than left out: an agent that is asked about an anti-pattern or an open
     # problem loads the file, so the tax is real even though it is not the
@@ -38,25 +42,32 @@ FILES = (
 )
 # A ceiling, not a target. Raise it deliberately in a PR and say why.
 #
-# Raised 55000 -> 63000 in the PR that split the two catalogs out of the README
-# (2026-10), for three reasons, in order of size:
+# Raised three times in 2026-10: 55000 -> 63000 when the two catalogs split out
+# of the README, -> 63500 when llms.txt and the stamp gate landed, -> 64000 when
+# the profiler entry and the open-problem-5 rewrite landed. Every raise is a
+# real cost, not drift:
 #
-# 1. The meter was already ~5.4k over the old number before that PR, from
-#    content growth on the Leg 3 (agent memory) and Output (run, don't generate)
-#    legs. Nobody noticed, which is the failure mode this counter exists to
-#    catch. Raising it silently would have been the wrong fix; saying so here
-#    is the fix.
+# 1. The meter was already ~5.4k over 55000 before the split, from content growth
+#    on the Leg 3 (agent memory) and Output (run, don't generate) legs. Nobody
+#    noticed, which is the failure mode this counter exists to catch. Saying so
+#    here is the fix; doing it silently would have been the anti-pattern.
 # 2. The split added ANTI-PATTERNS.md and OPEN-PROBLEMS.md to the metered set,
 #    because an agent asked about an anti-pattern loads that file. Leaving them
 #    out would have made the number smaller by not counting a real cost.
-# 3. Net of the split itself, the metered set grew ~1.7k: two on-demand files
-#    plus their index stubs and the doc updates, against a README that lost
-#    ~2.7k of always-loaded prose.
+# 3. llms.txt is a third such file (~400 tokens): the machine-readable index
+#    over the content docs, read to decide what to load. Same reasoning.
+# 4. The stamp gate (check_stamps.py) needs two documented lines, in AGENTS.md
+#    and CONTRIBUTING.md. A check nobody is told about is a check nobody runs.
+# 5. The profiler entry in Leg 0 and the rewrite of open problem 5, both added
+#    when token-harness profile landed. A tool that measures the window is the
+#    thing the list said nobody had, so it gets an entry; the question it
+#    answers gets narrowed to what an audit would still have to show.
 #
-# The always-loaded surface is the number worth holding down. README.md is now
-# 38.9k of the 62.4k total; the two catalogs are 2.9k and are only paid when
-# someone follows the link.
-BUDGET = 63_000
+# The alternative to (3), (4) and (5) was trimming llms.txt's descriptions until
+# the repo had five tokens of headroom. That is the wrong trade: the meter exists
+# to keep the always-loaded surface honest, and the always-loaded README is
+# exactly what it was before this PR.
+BUDGET = 64_000
 BADGE_PATH = (".github", "badges", "tokens.json")
 
 

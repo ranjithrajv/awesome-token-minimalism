@@ -70,6 +70,18 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_profile(args: argparse.Namespace) -> int:
+    """Profile per-turn context composition from a captured agent session."""
+    from . import profile as profiler
+
+    if args.session:
+        return profiler.profile_file(args.session, fmt=args.format)
+    if not sys.stdin.isatty():
+        return profiler.profile_stdin(fmt=args.format)
+    print("error: pass --session FILE or pipe a session event stream on stdin")
+    return 2
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="token-harness")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -83,6 +95,22 @@ def main() -> int:
     report_p = sub.add_parser("report", help="Pretty-print a report")
     report_p.add_argument("--input", required=True, help="Path to report JSON")
     report_p.set_defaults(func=cmd_report)
+
+    profile_p = sub.add_parser(
+        "profile",
+        help="Profile context composition per turn from a captured session",
+    )
+    profile_p.add_argument(
+        "--session",
+        help="Path to a captured agent-session event stream (newline-delimited JSON)",
+    )
+    profile_p.add_argument(
+        "--format",
+        choices=("table", "json"),
+        default="table",
+        help="Output format (default: table)",
+    )
+    profile_p.set_defaults(func=cmd_profile)
 
     args = parser.parse_args()
     return args.func(args)

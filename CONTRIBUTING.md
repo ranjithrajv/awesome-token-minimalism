@@ -183,6 +183,8 @@ depends on, and they are cited as sources constantly.
 3. Link rot: if you're updating a stale entry, say what changed and when.
 4. Numbers without a stamp decay within weeks in this field. If you're
    re-checking a `measured` entry, that's a high-value PR — send it.
+   `check_stamps.py` warns on entries with no date and on stamps older than
+   twelve months; it annotates rather than fails until coverage justifies it.
 5. Put the grade at the end of the entry's **first line**. A split verdict uses
    a compound tag (`[measured]/[asserted]`). The linter only reads that line,
    and so does anyone skimming the list.
@@ -195,6 +197,12 @@ and **runs of spaces are not collapsed**, so `## Leg 1 — Input` slugs to
 `#leg-1--input` with two hyphens. Several cross-references were silently broken
 before those checks existed; if one flags you, fix the anchor, not the check.
 
+A second script, `check_stamps.py`, warns on graded entries with no date and on
+stamps older than twelve months. It annotates rather than fails on purpose:
+about four entries in five carried no date at all when it landed, and a gate that
+goes red 198 times teaches everyone to ignore it. Fix the coverage first, then
+flip `FAIL_ON_STALE` at the top of the file.
+
 ```sh
 python .github/scripts/check_annotations.py README.md                 # grades + anchors
 python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
@@ -202,6 +210,7 @@ python .github/scripts/check_annotations.py RESOURCES.md
 python .github/scripts/check_annotations.py TOKENMAXXING.md
 python .github/scripts/check_annotations.py --anchors-only ANTI-PATTERNS.md
 python .github/scripts/check_annotations.py --anchors-only OPEN-PROBLEMS.md
+python .github/scripts/check_stamps.py README.md                      # stale or undated dates
 python .github/scripts/check_annotations.py --urls README.md          # link health
 ```
 
