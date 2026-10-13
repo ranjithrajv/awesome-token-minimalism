@@ -1645,8 +1645,8 @@ Three more things a contributor needs to know:
   is generated from this file by
   [`build_entries.py`](.github/scripts/build_entries.py) — name, URL, section,
   grade, and the date where an entry carries one. It exists so a qualification
-  question ("which of these are `[measured]`?") costs ~10k tokens instead of the
-  list's ~37k. It is the repo's own thesis applied to itself: hold the
+  question ("which of these are `[measured]`?") costs ~13k tokens instead of the
+  list's ~40k. It is the repo's own thesis applied to itself: hold the
   identifier, load the payload on demand. Hand-editing it fails CI, deliberately.
 - **Maintainers: [SHOWCASE.md](SHOWCASE.md) is for you.** Submit your own tool
   with the grade stated honestly — `[self-reported]` there is a normal, labelled

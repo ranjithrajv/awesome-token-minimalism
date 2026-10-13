@@ -1,0 +1,9 @@
+# The token meter (.github/scripts/count_tokens.py) is only reproducible with one
+# tokenizer, so it is pinned here rather than left to whatever happens to be
+# importable. CI installs this file; run `pip install -r requirements.txt` locally
+# before running the meter, or it will refuse to run rather than fall back to a
+# second, incomparable number.
+#
+# cl100k_base is the encoding the meter counts with. Bump this pin only in a PR
+# that also re-checks BUDGET -- the count and the ceiling move together.
+tiktoken==0.14.0

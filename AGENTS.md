@@ -16,8 +16,8 @@ The rest is scaffolding and metadata (`CITATION.cff`, `LICENSE`).
 
 `README.md` is the index and carries the entries; `entries.jsonl` is the
 generated index over those entries — name, URL, section, grade, and any date,
-one line each — so a qualification question costs ~10k tokens instead of the
-list's ~37k. Regenerate it with `.github/scripts/build_entries.py`; never
+one line each — so a qualification question costs ~13k tokens instead of the
+list's ~40k. Regenerate it with `.github/scripts/build_entries.py`; never
 hand-edit it, CI diffs it.
 `ANTI-PATTERNS.md` and
 `OPEN-PROBLEMS.md` are the two catalogs it points at (nineteen unmeasured
@@ -57,6 +57,8 @@ python .github/scripts/build_entries.py                             # after any 
 python .github/scripts/build_entries.py --check           # same gate CI runs
 python .github/scripts/check_annotations.py --urls README.md          # link extraction
 pytest harness/tests -q                                             # harness + checker tests
+pip install -r requirements.txt                                     # pinned tokenizer for the meter
+python .github/scripts/count_tokens.py --fail-over                  # the prose budget
 ```
 
 The two catalogs carry receipts and cross-links but no `- **[` entries, so they

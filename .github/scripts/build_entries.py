@@ -3,7 +3,7 @@
 
 The list's own thesis is progressive disclosure: hold an identifier and load the
 payload when the task needs it. An agent asked "which of these tools are
-`[measured]`" currently pays ~37k tokens of README to find out. `entries.jsonl`
+`[measured]`" currently pays ~40k tokens of README to find out. `entries.jsonl`
 is the index for that question -- name, section, grade, and any date, one line each --
 and this script is what keeps it honest.
 

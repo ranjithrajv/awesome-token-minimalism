@@ -138,9 +138,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install tokenizer (falls back to a chars/4 estimate if unavailable)
-        continue-on-error: true
-        run: pip install tiktoken
+      - name: Install the pinned tokenizer
+        # No `continue-on-error`: the meter has no fallback, so a missing
+        # tokenizer should fail here rather than silently change the unit.
+        run: pip install -r requirements.txt
       - name: Meter the list's own prose
         run: python .github/scripts/count_tokens.py --fail-over
       - name: Publish token badge (main only)
