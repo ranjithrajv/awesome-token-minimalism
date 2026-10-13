@@ -20,52 +20,33 @@ Usage:
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import sys
 import unicodedata
 import urllib.parse
 
-GRADES = ("measured", "self-reported", "asserted", "negative")
+# The checkers are run by path (`python .github/scripts/check_annotations.py`),
+# so the script's own directory is not on sys.path and the `entryspec` import
+# below would fail. The same two lines appear in every script in this directory.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-ENTRY_RE = re.compile(r"^\s*-\s+\*\*\[")
-# A grade is one of the four tags, optionally compound with `/` to signal a
-# split verdict, e.g. `[measured]/[asserted]` = the independent audit is
-# measured, but the tool's own headline number is not.
-GRADE_TAG = r"(?:" + "|".join(GRADES) + r")"
-GRADE_RE = re.compile(rf"\[{GRADE_TAG}\](?:/\[{GRADE_TAG}\])*")
+from entryspec import (  # noqa: E402  (needs the sys.path line above)
+    ENTRY_RE,
+    GRADE_RE,
+    GRADES,
+    strip_fences,
+)
+
+# URL and heading shapes are specific to this checker, so they stay here rather
+# than moving into the shared grammar.
 URL_RE = re.compile(r"\]\((https?://[^)\s]+)\)")
 HEADING_RE = re.compile(r"^#{2,4}\s+(.+)$", re.M)
 ANCHOR_RE = re.compile(r"\]\(#([^)]+)\)")
 # [text](other.md#anchor) — validated against the target file, not this one.
 CROSS_RE = re.compile(r"\]\((?!https?://)([^)#\s]+\.md)#([^)\s]+)\)")
-FENCE_RE = re.compile(r"^\s*(```|~~~)")
 
 
-def strip_fences(lines: list[str]) -> list[str]:
-    """Blank out fenced code blocks, preserving line numbers.
-
-    A fenced block is example or command text, not a graded entry. The entry
-    format in SHOWCASE.md and CONTRIBUTING.md is quoted inside a fence, and a
-    fence-blind linter flags its own documentation. Blanking rather than
-    dropping keeps every reported line number pointing at the real source.
-    """
-    out: list[str] = []
-    fence: str | None = None
-    for line in lines:
-        stripped = line.lstrip()
-        if fence is None:
-            m = FENCE_RE.match(line)
-            if m:
-                fence = m.group(1)
-                out.append("")
-                continue
-            out.append(line)
-        else:
-            # Inside a fence: close on a matching delimiter, then blank it.
-            if stripped.startswith(fence):
-                fence = None
-            out.append("")
-    return out
 
 
 def gh_slug(heading: str) -> str:
@@ -167,6 +148,49 @@ def check_cross_anchors(text: str, path: str) -> int:
     return 1 if missing else 0
 
 
+# A relative link to a file in this repo: `](other.md)`, `](../README.md#leg)`,
+# `](harness/)`, `](entries.jsonl)`. Everything with a scheme, every `#anchor`
+# to this file, and every non-path target is excluded.
+LOCAL_RE = re.compile(r"\]\((?!https?:|#|mailto:|tel:)([^)\s]+)\)")
+
+
+def check_local_links(text: str, path: str) -> int:
+    """Every relative markdown link must point at a file that exists.
+
+    This is the check that was missing, and it cost a broken link: the two
+    anchor checks only see `](file.md#anchor)`, so a link *without* a fragment
+    -- the majority of them -- was never validated at all. `llms.txt` shipped
+    pointing at `harness/docs/context-profiler.md`, a file that does not exist,
+    for as long as the file had no anchor check applied to it.
+    """
+    base = os.path.dirname(os.path.abspath(path))
+    headings: dict[str, set[str]] = {}
+    missing = 0
+    seen: set[tuple[str, str]] = set()
+    for target in LOCAL_RE.findall(text):
+        path_part, _, fragment = target.partition("#")
+        if (path_part, fragment) in seen:
+            continue
+        seen.add((path_part, fragment))
+        full = os.path.normpath(os.path.join(base, path_part))
+        if not os.path.exists(full):
+            print(f"::error file={path}::relative link target does not exist: {target}")
+            missing += 1
+            continue
+        if not fragment:
+            continue
+        # A fragment on a local link is validated against the target's headings,
+        # which is what CROSS_RE above does for the `.md#anchor` shape.
+        if path_part not in headings:
+            with open(full, encoding="utf-8") as fh:
+                headings[path_part] = {gh_slug(h) for h in HEADING_RE.findall(fh.read())}
+        if fragment not in headings[path_part]:
+            print(f"::error file={path}::broken local anchor {path_part}#{fragment}")
+            missing += 1
+    print(f"{path}: {len(seen)} relative links checked, {missing} broken")
+    return 1 if missing else 0
+
+
 def urls(lines: list[str]) -> int:
     seen: set[str] = set()
     for line in lines:
@@ -189,7 +213,7 @@ def main() -> int:
 
     rc = 0
     for path in args:
-        text = pathlib_read(path)
+        text = pathlib.Path(path).read_text(encoding="utf-8")
         lines = strip_fences(text.splitlines())
         if want_urls:
             # Link collection wants real URLs, and a fenced block can contain
@@ -203,13 +227,8 @@ def main() -> int:
             if not anchors_only:
                 rc |= check_entries(lines, path, required=not allow_empty)
             rc |= check_anchors(fenced_text, path)
-            rc |= check_cross_anchors(fenced_text, path)
+            rc |= check_local_links(fenced_text, path)
     return rc
-
-
-def pathlib_read(path: str) -> str:
-    with open(path, encoding="utf-8") as fh:
-        return fh.read()
 
 
 if __name__ == "__main__":

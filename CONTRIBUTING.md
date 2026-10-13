@@ -156,7 +156,7 @@ about a number. That is the register.
 ## Open problems
 
 The list has a standing [Open problems](OPEN-PROBLEMS.md) section with
-fourteen questions nobody has answered. If you can answer one — even partially — that
+sixteen questions nobody has answered. If you can answer one — even partially — that
 outranks any number you could add to an existing section. Two worth calling out:
 
 - **Where does a retention bar stop being worth its tokens?** It's prose in a
@@ -189,30 +189,31 @@ depends on, and they are cited as sources constantly.
    a compound tag (`[measured]/[asserted]`). The linter only reads that line,
    and so does anyone skimming the list.
 
-CI runs one script, `.github/scripts/check_annotations.py`, which checks four
-things: evidence grades, that entries are linked, same-file `#anchor` targets,
-and cross-file `other.md#anchor` targets. It reproduces GitHub's slug rules
-rather than guessing at them — emoji get percent-encoded, em dashes get dropped,
-and **runs of spaces are not collapsed**, so `## Leg 1 — Input` slugs to
-`#leg-1--input` with two hyphens. Several cross-references were silently broken
-before those checks existed; if one flags you, fix the anchor, not the check.
+CI runs `.github/scripts/check_annotations.py` and `.github/scripts/check_stamps.py`,
+which between them check six things: evidence grades, that entries are linked,
+same-file `#anchor` targets, relative link targets and their fragments, dates
+that go stale, and an undated-entry ceiling per file. The annotation script
+reproduces GitHub's slug rules rather than guessing at them — emoji get
+percent-encoded, em dashes get dropped, and **runs of spaces are not collapsed**,
+so `## Leg 1 — Input` slugs to `#leg-1--input` with two hyphens. Several
+cross-references were silently broken before those checks existed; if one flags
+you, fix the anchor, not the check.
 
-A second script, `check_stamps.py`, warns on graded entries with no date and on
-stamps older than twelve months. It annotates rather than fails on purpose:
-about four entries in five carried no date at all when it landed, and a gate that
-goes red 198 times teaches everyone to ignore it. Fix the coverage first, then
-flip `FAIL_ON_STALE` at the top of the file.
+The relative-link check is the newest and the one that found real defects on the
+day it landed: a link *without* a fragment was never validated at all, and
+`llms.txt` plus `OPEN-PROBLEMS.md` both pointed at
+`harness/docs/context-profiler.md`, a file that did not exist. If a doc is
+referenced, it should exist.
 
-```sh
-python .github/scripts/check_annotations.py README.md                 # grades + anchors
-python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
-python .github/scripts/check_annotations.py RESOURCES.md
-python .github/scripts/check_annotations.py TOKENMAXXING.md
-python .github/scripts/check_annotations.py --anchors-only ANTI-PATTERNS.md
-python .github/scripts/check_annotations.py --anchors-only OPEN-PROBLEMS.md
-python .github/scripts/check_stamps.py README.md                      # stale or undated dates
-python .github/scripts/check_annotations.py --urls README.md          # link health
-```
+A third script, `build_entries.py`, generates `entries.jsonl` — the index over
+the entries — and CI fails if the committed index disagrees with the README. It
+is generated, not edited; run it after any README change.
+
+The full command list, including the commands to run by hand, lives in
+[`AGENTS.md`](AGENTS.md). It is kept there rather than duplicated here: AGENTS.md
+is the copy an agent loads on every turn, this file is loaded when a human opens
+a PR, and a second copy of the same nine commands is a per-turn tax the repo
+already argues against.
 
 ### Which file, which format
 

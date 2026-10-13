@@ -10,12 +10,12 @@ Part of [Awesome Token Minimalism](README.md).
 
 ## Contents
 
-- [The fifteen questions](#the-fifteen-questions)
+- [The sixteen questions](#the-sixteen-questions)
 - [See also](#see-also)
 
 ---
 
-## The fifteen questions
+## The sixteen questions
 
 Real gaps, numbered so they can be cited. Each one states enough of the
 shape of the answer that someone could go get it. Answering one outranks
@@ -39,7 +39,7 @@ tokens-per-task is better than tokens-per-request, but it requires knowing the r
 
 ### 5. Which context-window profiler is independently audited, and by what diff?
 
-Most of [Leg 0](README.md#leg-0--measure) is `[self-reported]`; the `[measured]` entries audit instruction files and bills, not per-turn context composition. This repo now ships a baseline — [`token-harness profile`](../harness/docs/context-profiler.md), which reads an agent's own event stream and reports the window turn by turn — so the question is no longer whether one exists but **which third-party profiler agrees with it, and where the boundaries differ.** [`contextlens-profiler`](https://pypi.org/project/contextlens-profiler/) is the candidate: listed `[measured]` here, describing exactly this capability, so either the entry is graded generously or the question was wrong. An audit is a diff, not an opinion.
+Most of [Leg 0](README.md#leg-0--measure) is `[self-reported]`; the `[measured]` entries audit instruction files and bills, not per-turn context composition. This repo now ships a baseline — [`token-harness profile`](harness/docs/context-profiler.md), which reads an agent's own event stream and reports the window turn by turn — so the question is no longer whether one exists but **which third-party profiler agrees with it, and where the boundaries differ.** [`contextlens-profiler`](https://pypi.org/project/contextlens-profiler/) is the candidate: listed `[measured]` here, describing exactly this capability, so either the entry is graded generously or the question was wrong. An audit is a diff, not an opinion.
 
 ### 6. Is per-model brevity tuning worth it?
 
@@ -80,6 +80,10 @@ A decision model still reads the full state and still has a token budget (`head_
 ### 15. What is the independently measured token delta of codemod-versus-agent editing?
 
 Everything in [Leg 2 — Output](README.md#leg-2--output) is either an author's characters-per-token *estimate*, a third party's un-reproduced percentage, or a vendor's own benchmark. The one genuine pair of numbers — an agent alone at **>65M tokens** against an agent calling recipes at **~30k**, Java 25 — is vendor-published for a vendor platform, with no stated task set and no replication. What would settle it: the same corpus, the same transform, a tokenizer over *both* arms, an independent harness, and the per-file re-read cost a long session imposes — the term every estimate omits. The 45/40–60/80% figures are conversion *rates*, not token counts, and nothing converts between them.
+
+### 16. What does an authoring gate prevent, in tokens?
+
+test-audit's first mechanism is an **authoring gate** — four questions before adding a test, where a missing answer means don't add it yet. It is the only *preventive* mechanism in Leg 3 and the only one with no number: the campaign mode has ~400k LOC (maintainer report, no n, no baseline), and the gate has nothing. You cannot count a token that was never spent, so this has to be measured as a difference — matched branches, one gated and one not, metered over both — and nobody has. The post that popularized it ([`@steipete`, 2026-09-24](https://x.com/steipete/status/2103147927313199260)) reports the *deletion*, which is the half that already has a number. Until the gate is metered, "don't write it" is the unmeasured half of a measured pair. → [Prune what you already emitted](README.md#%F0%9F%A7%B9-prune-what-you-already-emitted)
 
 ---
 

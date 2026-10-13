@@ -1,0 +1,108 @@
+---
+name: link_check_weekly
+
+# The per-PR link job reports and moves on: it must not block a contributor
+# over a host that is having a bad hour. This is the sweep that catches the
+# other half — a link that rotted quietly six weeks ago and is still listed.
+# It runs against main, never against a PR, and writes to one issue.
+
+on:
+  schedule:
+    - cron: "37 6 * * 1"  # Mondays, 06:37 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sweep:
+    name: Weekly link sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Collect links
+        run: |
+          python .github/scripts/check_annotations.py --urls README.md > /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls RESOURCES.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls TOKENMAXXING.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls ANTI-PATTERNS.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls OPEN-PROBLEMS.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls SHOWCASE.md >> /tmp/urls.txt
+          python .github/scripts/check_annotations.py --urls llms.txt >> /tmp/urls.txt
+
+      - name: Check external links resolve
+        run: |
+          cat /tmp/urls.txt | xargs -P 8 -I{} sh -c '
+            code=$(curl -sSL -o /dev/null -w "%{http_code}" \
+              --max-time 20 --retry 2 -A "Mozilla/5.0 (compatible; awesome-link-check)" "{}" || echo 000)
+            echo "$code {}"
+          ' > /tmp/status.txt
+          grep -vE '^(2[0-9][0-9]|3[0-9][0-9]) ' /tmp/status.txt \
+            | grep -vEf .github/scripts/link-exceptions.txt \
+            | sort > /tmp/dead.txt || true
+          echo "--- unreachable this week ($(wc -l < /tmp/dead.txt)) ---"
+          cat /tmp/dead.txt
+
+      - name: Report into one labelled issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const dead = fs.readFileSync('/tmp/dead.txt', 'utf8').trim()
+            const today = new Date().toISOString().slice(0, 10)
+            const label = 'link-rot'
+            const title = 'Link health: unreachable links in the list'
+
+            let body
+            if (!dead) {
+              body = `Weekly link sweep, ${today}: every external link resolved. No action needed.`
+            } else {
+              const rows = dead.split('\n').map((line) => {
+                const [code, url] = line.split(' ')
+                return `| \`${code}\` | ${url} |`
+              }).join('\n')
+              body = [
+                `Weekly link sweep, ${today}: ${rows.split('\n').length} external link(s) did not resolve.`,
+                '',
+                '| Status | URL |',
+                '|---|---|',
+                rows,
+                '',
+                'A host that rejects automated clients but serves readers is an',
+                'exception, not a fix: add it to `.github/scripts/link-exceptions.txt`',
+                'with a reason. A link that has genuinely moved is an entry correction',
+                '— the grade stays, the URL changes, and the stamp keeps its date.',
+              ].join('\n')
+            }
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+              per_page: 5,
+            })
+            if (existing.length) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing[0].number,
+                title,
+                body,
+              })
+              core.notice(`updated #${existing[0].number}`)
+            } else {
+              const { data: created } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [label],
+              })
+              core.notice(`created #${created.number}`)
+            }

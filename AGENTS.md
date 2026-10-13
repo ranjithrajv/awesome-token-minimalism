@@ -11,15 +11,21 @@ An awesome list plus its own measurement layer. The content docs are
 `README.md`, `TOKENMAXXING.md`, `GLOSSARY.md`, `RESOURCES.md`, `SHOWCASE.md`,
 `ANTI-PATTERNS.md`, `OPEN-PROBLEMS.md`, and `CONTRIBUTING.md`; `harness/` and
 `posts/` hold the paired A/B rig and its result writeups;
-`.github/scripts/check_annotations.py` is the CI gate. The rest is scaffolding
-and metadata (`CITATION.cff`, `LICENSE`).
+`.github/scripts/check_annotations.py` and `check_stamps.py` are the CI gate.
+The rest is scaffolding and metadata (`CITATION.cff`, `LICENSE`).
 
-`README.md` is the index and carries the entries; `ANTI-PATTERNS.md` and
+`README.md` is the index and carries the entries; `entries.jsonl` is the
+generated index over those entries — name, URL, section, grade, date, one line
+each — so a qualification question costs ~10k tokens instead of the list's
+~37k. Regenerate it with `.github/scripts/build_entries.py`; never hand-edit it,
+CI diffs it.
+`ANTI-PATTERNS.md` and
 `OPEN-PROBLEMS.md` are the two catalogs it points at (nineteen unmeasured
-defaults, fifteen unmeasured questions), one file each, no details toggle.
+defaults, sixteen unmeasured questions), one file each, no details toggle.
 `SHOWCASE.md` is where a maintainer submits their own tool and
 `harness/docs/submit-a-run.md` is the runbook for a number that survives review
 — the grade is theirs to state, which is why the file labels the distinction.
+`llms.txt` is the machine-readable index; add new docs there.
 
 ## The one rule
 
@@ -45,8 +51,12 @@ python .github/scripts/check_annotations.py TOKENMAXXING.md           # negative
 python .github/scripts/check_annotations.py --anchors-only ANTI-PATTERNS.md  # defaults catalog
 python .github/scripts/check_annotations.py --anchors-only OPEN-PROBLEMS.md  # gaps catalog
 python .github/scripts/check_annotations.py --allow-empty SHOWCASE.md # maintainer submissions
+python .github/scripts/check_annotations.py --anchors-only llms.txt   # machine-readable index
 python .github/scripts/check_stamps.py README.md              # stamps: stale or undated
+python .github/scripts/build_entries.py                             # after any README edit
+python .github/scripts/build_entries.py --check           # same gate CI runs
 python .github/scripts/check_annotations.py --urls README.md          # link extraction
+pytest harness/tests -q                                             # harness + checker tests
 ```
 
 The two catalogs carry receipts and cross-links but no `- **[` entries, so they
@@ -54,15 +64,25 @@ run with `--anchors-only` — the same mode as `GLOSSARY.md`. Do not add
 `--allow-empty` to force them through `check_entries`; there is nothing there to
 grade.
 
-**Dates are the fourth check.** `check_stamps.py` warns — never fails — on undated
-entries and stamps older than twelve months; flip `FAIL_ON_STALE` when coverage
-justifies it.
+**Dates are the fourth check.** `check_stamps.py` warns on undated entries and on
+stamps older than twelve months, and *fails* when a file's undated count goes
+over the ceiling in `MAX_UNDATED`. Lower that ceiling in the same PR that adds
+the dates — it is a ratchet, not a target, and the number it is holding (150 of
+154 README entries) is the repo's biggest credibility gap.
 
-The script runs the same gate as CI and checks four things: evidence grades,
-linked entries, same-file `#anchor` targets, and cross-file `other.md#anchor`
-targets. It reproduces GitHub's slug rules rather than guessing at them — emoji
-get percent-encoded, em dashes get dropped, and **runs of spaces are not
-collapsed**, so `## Leg 1 — Input` slugs to `#leg-1--input` with two hyphens.
+**Relative links are checked, not assumed.** Every `](path)` that points inside
+this repo must resolve, with or without a `#fragment`. Before that check existed,
+`llms.txt` and `OPEN-PROBLEMS.md` both shipped pointing at
+`harness/docs/context-profiler.md` — a file that did not exist. A doc that is
+referenced belongs in `llms.txt`; a doc that has not been written does not get a
+link.
+
+The script runs the same gate as CI and checks six things: evidence grades,
+linked entries, same-file `#anchor` targets, relative link targets with their
+fragments, dates that go stale, and the per-file undated ceiling. It reproduces
+GitHub's slug rules rather than guessing at them — emoji get percent-encoded, em
+dashes get dropped, and **runs of spaces are not collapsed**, so
+`## Leg 1 — Input` slugs to `#leg-1--input` with two hyphens.
 Fenced code blocks are blanked before grading, so an entry template quoted as an
 example is not itself an entry. If it flags your entry, fix the missing field; if
 it flags an anchor, fix the anchor. Do not relax the check.

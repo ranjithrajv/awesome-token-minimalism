@@ -26,6 +26,11 @@ jobs:
           # Maintainer submissions: grades are enforced once entries exist, but
           # an empty showcase is the current state, not a failure.
           python .github/scripts/check_annotations.py --allow-empty SHOWCASE.md
+          # The machine-readable index gets the same anchor and relative-link
+          # treatment: it is the first file an agent reads. Its links without a
+          # fragment used to be invisible to every check, which is how
+          # llms.txt shipped pointing at a doc that did not exist.
+          python .github/scripts/check_annotations.py --anchors-only llms.txt
           # The date gate: warns, never fails, until entry coverage justifies
           # enforcing. Warnings still surface as PR annotations.
           python .github/scripts/check_stamps.py README.md RESOURCES.md TOKENMAXXING.md
@@ -47,6 +52,9 @@ jobs:
           python .github/scripts/check_annotations.py --urls ANTI-PATTERNS.md >> /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls OPEN-PROBLEMS.md >> /tmp/urls.txt
           python .github/scripts/check_annotations.py --urls SHOWCASE.md >> /tmp/urls.txt
+          # The machine-readable index an agent reads before deciding what to
+          # load: its links are as load-bearing as the list's.
+          python .github/scripts/check_annotations.py --urls llms.txt >> /tmp/urls.txt
           echo "$(wc -l < /tmp/urls.txt) links collected"
       - name: Check external links resolve
         run: |
@@ -58,9 +66,10 @@ jobs:
           echo "--- results ---"
           cat /tmp/status.txt
           echo "--- failures (excluding known-soft hosts) ---"
+          # The soft-host list is a data file, not grep literals buried in CI:
+          # the excuses should be reviewable in a diff.
           grep -vE '^(2[0-9][0-9]|3[0-9][0-9]) ' /tmp/status.txt \
-            | grep -vE ' (https://x\.com|https://twitter\.com|https://dev\.to|https://pypi\.org/project/(contextwatch|contextlens-profiler)/)' \
-            | grep -vE ' https://cognition\.com/blog' \
+            | grep -vEf .github/scripts/link-exceptions.txt \
             || true
           # Non-2xx is reported above but does not fail the job: many hosts
           # (X, PyPI, vendor blogs) reject automated clients while serving
@@ -68,6 +77,38 @@ jobs:
           if grep -qE '^(000) https?://[^ ]*$' /tmp/status.txt; then
             echo "::warning::some links were unreachable from CI"
           fi
+
+  grade-index:
+    name: Entry index
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Entry index matches the README
+        # `entries.jsonl` is generated, not edited. A hand-edited index that
+        # disagrees with the list is worse than no index, so the gate is a
+        # regenerate-and-diff rather than a request in CONTRIBUTING.md.
+        run: python .github/scripts/build_entries.py --check
+
+  test:
+    name: Harness tests and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the harness with its dev extras
+        run: pip install -e "./harness[dev]"
+      - name: Run harness unit tests
+        # Covers three modules: the paired A/B statistics, the profiler, and the
+        # annotation checks -- including the GitHub slug rules that every emoji
+        # anchor in the README depends on.
+        run: python -m pytest harness/tests -q
+      - name: Lint
+        run: ruff check harness/src harness/tasks harness/tests .github/scripts
 
   tokens:
     name: List token budget

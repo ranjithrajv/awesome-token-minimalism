@@ -1,0 +1,27 @@
+# Hosts that fail the link check but are not dead.
+#
+# One extended regular expression per line, matched against the
+# `<http_code> <url>` lines the link checker prints. `#` starts a comment.
+#
+# These used to live as grep literals inside check.yml, which meant the list of
+# excuses was editable only by editing CI. That is the same anti-pattern this
+# repo catalogues in its own subject: a default nobody can see, charged silently
+# to the result. Now it is a file, it is reviewable in a PR, and adding a line
+# means saying why.
+#
+# Every pattern here is a host that rejects automated agents while serving
+# humans: a bot-blocked 403/000 is not link rot. Removing a line is the fix for
+# a host that has started blocking everything, including browsers.
+
+# Social embeds: these return 400/403 to curl with no JS and no session.
+ https://x\.com
+ https://twitter\.com
+
+# dev.to serves readers fine and rate-limits anything that looks like a crawler.
+ https://dev\.to
+
+# PyPI's JSON/CDN endpoints 403 to curl for these two packages specifically.
+ https://pypi\.org/project/(contextwatch|contextlens-profiler)/
+
+# Cognition's blog sits behind a JS challenge for non-browser user agents.
+ https://cognition\.com/blog

@@ -66,7 +66,6 @@ def run_paired(
     results: list[TaskResult] = []
 
     for task in tasks:
-        task_id = task["id"]
         for arm in ("baseline", "treatment"):
             result = task_fn(task, arm)
             results.append(result)
