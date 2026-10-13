@@ -26,6 +26,14 @@ One agent session, turn by turn:
 The flags are the point. A percentage table tells you the window is 35% schemas;
 the flag tells you those schemas were never called.
 
+Two of them fire on a threshold rather than a binary condition, and the
+thresholds are module constants at the top of
+[`src/token_harness/profile.py`](../src/token_harness/profile.py), not
+measurements: `tool_share_high` above **40%** of the prompt, `cache_share_low`
+below **10%**. A session with one turn of context can sit under that floor
+perfectly legitimately, so a flag names a line item for review and does not
+declare an anti-pattern. Change them if your sessions disagree.
+
 ## Running it
 
 ```sh

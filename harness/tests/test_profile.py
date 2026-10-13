@@ -156,3 +156,30 @@ def test_json_and_table_formats_render():
     table = profiler.format_table(profile)
     assert "Context composition" in table
     assert "turn" in table
+
+
+def test_a_checkpoint_with_no_break_state_is_a_visible_zero_turn():
+    """The doc promises this: a partial capture must be visibly partial, because
+    zeros and 'the format moved' are different facts."""
+    bare = {"type": "session.usage_checkpoint", "data": {}}
+    profile = profiler.parse_events(json.dumps(bare), source="bare")
+    assert len(profile.turns) == 1
+    assert profile.turns[0].prompt_tokens == 0
+    assert any("promptCacheBreakState" in w for w in profile.warnings)
+
+
+def test_profile_file_exits_nonzero_when_nothing_was_captured(tmp_path):
+    """`profile_file` returning 1 on an empty session is what makes it safe in a
+    pipeline, and it is the exit code the doc advertises."""
+    session = tmp_path / "session.jsonl"
+    session.write_text(json.dumps({"type": "session.start"}) + "\n", encoding="utf-8")
+    assert profiler.profile_file(str(session)) == 1
+
+
+def test_cache_share_low_is_flagged_separately_from_cache_cold():
+    """A cache that reads almost nothing is not the same defect as no cache at
+    all: one is misconfiguration, the other is an unpriced prompt."""
+    line = json.dumps(_checkpoint(10_000, 400, 100, 1_000, 2, {"identity": 200}))
+    joined = " ".join(profiler.parse_events(line).flags())
+    assert "cache_share_low" in joined
+    assert "cache_cold" not in joined
