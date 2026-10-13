@@ -1437,21 +1437,27 @@ ponytail   │ −20%   ████████████████        
            └───────────────────────────────────────────────────┘
 ```
 
-| Tool | Advertised | Measured | Quality |
-|---|---|---|---|
-| [`caveman`](https://github.com/JuliusBrussee/caveman) | −65% output tokens | **−8.5%** (86 tasks, sign test p=0.82) | flat |
-| [`rtk`](https://github.com/ai-skynet-labs/reduce-tokens) | −60…90% | **+7.6% cost** at low effort (p=0.004, 425 trials), ±0% at high | tie |
-| [`ponytail`](https://github.com/DietrichGebert/ponytail) | −54% code, −20% cost | **−15.4% code** (p=0.088), **−10.3% cost** (p=0.004), −11% time | indistinguishable (65/80 identical) |
-| [`test-audit`](https://github.com/openclaw/openclaw/blob/main/.agents/skills/test-audit/SKILL.md) | −400k LOC tests | *no independent replication* — self-reported, coverage-only guard | reportedly held |
+| Tool | Advertised | Measured | Measured by | Quality |
+|---|---|---|---|---|
+| [`caveman`](https://github.com/JuliusBrussee/caveman) | −65% output tokens | **−8.5%** (86 tasks, sign test p=0.82) | JetBrains | flat |
+| [`rtk`](https://github.com/ai-skynet-labs/reduce-tokens) | −60…90% | **+7.6% cost** at low effort (p=0.004, 425 trials), ±0% at high | JetBrains | tie |
+| [`ponytail`](https://github.com/DietrichGebert/ponytail) | −54% code, −20% cost | **−15.4% code** (p=0.088), **−10.3% cost** (p=0.004), −11% time | JetBrains | indistinguishable (65/80 identical) |
+| [`test-audit`](https://github.com/openclaw/openclaw/blob/main/.agents/skills/test-audit/SKILL.md) | −400k LOC tests | *no independent replication* — self-reported, coverage-only guard | none | reportedly held |
+
+**A row above counts as `[measured]` only if someone other than the tool's own
+author measured it.** A number the author published, with a harness and a
+baseline attached, is still `[self-reported]` — it just arrives better
+documented. Name the party, so a reader can tell the two apart without opening
+every link.
 
 Head-to-head against ponytail's own rebuilt benchmark
 ([curviate](https://curviate.com/blog/ponytail-vs-caveman)):
 
-| Arm | Code | Tokens | Cost | Time | Safe |
-|---|---|---|---|---|---|
-| `ponytail` | −54% | −22% | −20% | −27% | 100% |
-| `caveman` | −20% | **+7%** | **+3%** | +2% | 100% |
-| *"Follow YAGNI, prefer one-liners"* (7 words) | −33% | −14% | −21% | −30% | **95%** |
+| Arm | Code | Tokens | Cost | Time | Safe | Source |
+|---|---|---|---|---|---|---|
+| `ponytail` | −54% | −22% | −20% | −27% | 100% | curviate |
+| `caveman` | −20% | **+7%** | **+3%** | +2% | 100% | curviate |
+| *"Follow YAGNI, prefer one-liners"* (7 words) | −33% | −14% | −21% | −30% | **95%** | curviate |
 
 The two `caveman` measurements use different harnesses and metrics — the ledger
 above is the JetBrains paired A/B, this table is curviate's rebuilt SkillsBench
@@ -1471,10 +1477,12 @@ what you actually ran:
 
 ```
 model: claude-sonnet-5 · harness: Claude Code 2.1.201 · date: 2026-07
-n: 80 paired · p=0.004 · quality: 65/80 identical
+n: 80 paired · p=0.004 · quality: 65/80 identical · measured-by: <who>
 ```
 
-Anything without a stamp is `[self-reported]`, however large the number.
+Anything without a stamp is `[self-reported]`, however large the number. And a
+stamp naming the tool's own author is still author-published evidence — real,
+useful, and not the same thing as an independent measurement.
 
 [↑ Contents](#contents)
 

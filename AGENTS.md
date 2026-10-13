@@ -66,6 +66,10 @@ it flags an anchor, fix the anchor. Do not relax the check.
 - **Numbers decay.** Anything `[measured]` needs model, harness, date, and n
   where you have them. If you're re-checking a stale entry, that's a
   high-value PR.
+- **Name the measuring party.** A `[measured]` ledger row needs someone other
+  than the tool's author behind it; an author-published number with a stated
+  baseline and method is `[self-reported]`, however well documented. Say which
+  one it is.
 
 ## Do not
 

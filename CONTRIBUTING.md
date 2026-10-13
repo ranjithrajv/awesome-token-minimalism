@@ -63,6 +63,12 @@ Five things, in this order:
 5. **The stamp, if you have one.** Model, harness, date, n, significance test.
    Optional — `[measured]` does not require a lab — but a `[measured]` without a
    stated baseline is really `[self-reported]`, and we will relabel it.
+6. **Who measured it**, if you are submitting to the [token
+   ledger](README.md#token-ledger). A ledger row is `[measured]` only when a
+   party other than the tool's own author ran it. An author-published number with
+   a harness and a baseline is better evidence than a bare claim, but it is still
+   `[self-reported]` — say so in the `Measured by` column rather than letting the
+   reader assume.
 
 ## The three numbers, not one
 
@@ -96,7 +102,7 @@ possible if nobody checked which number they were optimizing.
 | **Leg 3 — Lifetime** | reduces what you emit that future sessions pay for |
 | **⚡ Serve-side** | only moves `$` or latency, not tokens |
 | **Anti-patterns** | is a *default that shipped unmeasured* |
-| **Token ledger** | has been independently measured against its claim |
+| **Token ledger** | has been independently measured against its claim, by someone other than the author |
 
 If you can't place an entry, that's usually a sign it hasn't been measured yet.
 Say so in the PR and we'll figure out where it goes together.
