@@ -43,6 +43,7 @@ the first. The bill for the third is the one nobody has instrumented.
   - [💾 Cache](#%F0%9F%92%BE-cache) — three mechanisms people conflate
 - [Leg 2 — Output](#leg-2--output) — what you get billed for
   - [🎯 Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — the model class with no output stream
+  - [⚙️ Run, don't generate](#%E2%9A%99%EF%B8%8F-run-dont-generate) — if a rule can express it, a codemod beats both
 - [Leg 3 — Lifetime](#leg-3--lifetime) — what you emit becomes context forever
   - [🧠 Agent memory](#%F0%9F%A7%A0-agent-memory--reuse-what-you-emitted) — the lifetime leg, sold as a product
 - [Serve-side](#serve-side-cost-and-latency-not-token-count) — cheaper without being fewer
@@ -841,7 +842,8 @@ to hold. A real architecture, not a micro-optimization.
 
 What you get billed for, at 5–25× the input rate. Ordered the same way: audit
 the invisible spend, budget it, reason less about it, constrain its shape, avoid
-generating it at all, write it cheaply, and cut it at the tool boundary.
+generating it at all, write it cheaply, run it instead of writing it, and cut it
+at the tool boundary.
 
 ### 📐 Audit
 
@@ -931,7 +933,7 @@ is explicit — they give up generation and multi-step reasoning entirely.
 > list is per-query at autoregressive inference. Nobody has published Wh/query
 > for a System One model, and "it should be much lower" is an
 > `[asserted]` claim wearing a `[measured]` one's clothes. It's in
-> [Open problems](#open-problems).
+> [Open problems](OPEN-PROBLEMS.md).
 
 > **The routing rule that follows:** if a decision can be written as a choice
 > among known options, a score on a known rubric, or a yes/no, it does not need
@@ -951,6 +953,55 @@ The edit protocol is a token decision, not a formatting preference.
 - **[AdaEdit / FuncDiff / BlockDiff (ACL 2026)](https://aclanthology.org/2026.findings-acl.1483)** — standard diffs *increase* failure rates: "fragile offsets and fragmented hunks make generation highly unnatural for LLMs." Structure-aware block-level diffs match full-code accuracy at **>30% lower cost and latency** on long-file edits; adaptive selection beats any fixed format. `[measured]`
 - **[BlockDiff (Cognition)](https://cognition.com/blog)** — block-level snapshots built for agents as a first-class file format. `[self-reported]`
 - **[SWE-Edit](https://arxiv.org/html/2604.26102v1)** — the rare paper where token reduction *and* quality improved together. Viewer returns on average **39.7%** of the requested file (60.3% less code surface); combined with an adaptive editor, non-cached main-agent input **276.7k → 181.3k (−34.5%)**, total cost −17.9%, and edit success **93.4% → 96.9%**. `[measured]`
+
+### ⚙️ Run, don't generate
+
+[Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) removes the output stream for a *decision*. This removes it for an *edit*. If a deterministic rule can express the change, run it and spend none of the three budgets, because **output tokens scale with the program, not with the corpus** — one 116-line transform rewrites 63 declarations in 189 ms, where an agent rewrites them one at a time, re-reads each file, and has to have each file reviewed. [Edit cheaply](#%E2%9C%8F%EF%B8%8F-edit-cheaply) makes an edit cheaper to *serialize*; this avoids routing the edit *through a model* at all, which is why it is a section and not a sixth entry there.
+
+- **[Migrating a large codebase with an agent (Backgrind, 2026-08)](https://backgrind.com/blog/migrate-a-large-codebase-with-an-agent/)** · `sed: 8 tsc errors · AST codemod: clean` · `[measured]`
+  109 TypeScript files, 23,330 lines, 902,586 bytes, 65 `interface` declarations, each transformed `interface X {}` → `type X = {}` twice against identical copies — once with one line of `sed`, once with a 116-line AST codemod — with `tsc --noEmit` before and after each. The codemod rewrote **63 and refused 2**; `sed` rewrote all 65 and took `tsc` from clean to **8 errors**, all 8 tracing to one line the regex could not see the meaning of: `declare global { interface Window { … } }` augments the built-in `Window` precisely *because* interfaces merge, and rewritten as a type alias it becomes `Duplicate identifier 'Window'`. Widen the same `sed` to include the one `.d.ts` that also augments `Window` and the count goes **8 → 214**. The codemod's two refusals arrived as a two-line list rather than a silent breakage: operating on structure means it "knows what it does not know." Wall clock **189 ms**; `tsc` clean before and after. `[measured]` — baseline, method, corpus, machine, and date all stated; one author, n=109.
+  ⚠️ **Two things the author flags about his own post.** The token figures (~$1.29 for one cold read of the 109 files, ~$14 scaled to 1,200) are characters-per-token *estimates*, not tokenizer runs. And the Slack, Google, and Airbnb figures below are *their* published write-ups, not reproduced by him. **Nobody has published a tokenizer-backed token delta for codemod-versus-agent editing on the same corpus** — that gap is [Open problem 15](OPEN-PROBLEMS.md#15-what-is-the-independently-measured-token-delta-of-codemod-versus-agent-editing).
+
+- **[Slack: 15,000+ Enzyme tests → React Testing Library](https://backgrind.com/blog/migrate-a-large-codebase-with-an-agent/)** · `codemod 45% · LLM 40–60% · composed 80%` · `[self-reported]`
+  The load-bearing composite, and the mechanic is the part worth stealing: run the **AST codemod first**, then hand the model its *partially-converted output plus its annotations* instead of a raw file. Codemod alone converted **45%**; an LLM alone (Claude 2.1) fluctuated **40–60%** and was unstable; the two composed reached **80%**. The codemod does the boring part and leaves comments naming what it could not do, so the model starts from there instead of re-deriving the whole file. Same shape as [LazyGraphRAG](#%F0%9F%95%B8%EF%B8%8F-graph-engineering) and [batch × cache](#interaction-matrix) — the gain came from composing, not from picking a side.
+- **[Google: JUnit3→JUnit4, int32→int64 IDs](https://backgrind.com/blog/migrate-a-large-codebase-with-an-agent/)** — **80%** of code modifications in landed changelists were fully AI-authored, but only alongside deterministic AST tooling: *"a combination of AST-based techniques, heuristics, and LLMs are needed to achieve success."* The same report puts it negatively, and it is worth keeping in that direction: *"the use of LLMs alone through simple prompting is not sufficient for anything but the simplest of migrations."* And the constraint that actually bit was **not model quality or generation speed — it was human review capacity**: they "needed to slow down some of the migration work to avoid overwhelming the teams that had to do the reviews." JUnit moved 5,359 files and 149,000+ lines in three months. `[self-reported]`
+- **[Airbnb `ts-migrate`: 6M-line monorepo → TypeScript](https://github.com/airbnb/ts-migrate)** — pure codemod, pre-LLM, converting projects of **50,000+ lines and 1,000+ files in a day**. The design decision is the one to steal: it does not produce *good* TypeScript, it produces *compiling* TypeScript, inserting `any` and a suppression comment wherever it cannot infer, so the build is green first and the thinking happens after. **Every `@ts-expect-error` is a ticket**, and the number to watch is "how many suppressions remain," not "does it compile." That converts an open-ended migration into a finite, greppable worklist — [Bounded goal](GLOSSARY.md#bounded-goal) applied to an artifact instead of to a prompt. `[self-reported]`
+
+**The tools, ordered by how much structure they keep.** A codemod is only as good as the tree it rewrites — that is what separates "knows what it does not know" from "rewrote 65 and broke the build."
+
+- **[OpenRewrite](https://github.com/openrewrite/rewrite)** · `agent alone 65M+ tokens · agent + recipes ~30k` · `[self-reported]`
+  The JVM stack, and the only codemod tool with a published token figure. Rewrites a **Lossless Semantic Tree** rather than an AST: type-attributed, so a recipe matches by resolved type instead of by name and does not produce false positives, and formatting-preserved, so the result keeps the style around it. Recipes are deterministic programs — the smallest does one search or one change, composite recipes group them. The detail worth stealing is that **search is just a transformation that adds markers**: matched elements get marked and exported as text, usually a TODO comment or a Jira number. That is Airbnb's worklist promoted to a first-class feature. The figure: a Java 25 migration where an agent working alone spent **>65M tokens over 45 minutes** and finished about a **quarter**, against an agent calling recipes at **~30k tokens in 3 minutes**, which finished. Same vendor, same harness — the only published pair here, and not independently replicated.
+- **[ast-grep](https://github.com/ast-grep/ast-grep)** · `patterns written as ordinary code` · `[self-reported]`
+  The language-agnostic, CLI-native counterpart: tree-sitter ASTs, rules in YAML, patterns that look like the code you would write (`var code = $PATTERN`), and an [MCP server](https://github.com/ast-grep/ast-grep-mcp) so an agent can search with a verified rule. It is also the only tool here with a published **failure map for LLM-written rules**, from the author's own runs — which is the most useful thing on this page if you are thinking about letting a model write the rule. OpenAI O3 *"hallucinated with wild abandon,"* inventing CodeQL and jscodeshift syntax while ignoring the docs, and *"couldn't recover from tool errors and would quickly give up"*; Gemini was more grounded but borrowed Semgrep syntax and *"preferr[ed] to invent its own ast-grep CLI commands rather than using the MCP tools I provided"*; Claude 4 *"correctly identified ast-grep and produced syntactically valid rules"* — but *"struggled with subtle semantic details that would make a rule functionally correct."* His diagnosis is the general shape of the risk: *"a small mistake in one part of the rule can snowball into a completely incorrect rule."* His fix is a five-step prompt that **tests the rule against a worked example before searching the codebase with it** — a retention bar for a transform.
+- **[Moderne agent tools: Trigrep and Prethink](https://moderne.ai/moderne-agent-tools/trigrep)** · `recipes as ordinary tools for Claude Code / Cursor / Copilot` · `[self-reported]`
+  The commercial layer above OpenRewrite: batch-builds and serializes LSTs once so recipe runs skip the rebuild, stores them for thousands of repositories, and exposes **Trigrep** (type-aware search, **13.5× faster than ripgrep** on the vendor's own measurement) and **Prethink** (codebase context resolved ahead of time) to agents as tools. The reason type-aware search is a *token* lever and not merely a speed one, in their words: *"Lacking precision, Claude Code often greps and then follows that grep by expensive reads to confirm a match has the type it is looking for."* Every imprecise hit costs a read. Same shape as the [LSP measurement study](https://arxiv.org/pdf/2608.13568) — the number is the vendor's, and the mechanism claim is checkable independently.
+- **[jscodeshift](https://github.com/facebook/jscodeshift)** — the default for JavaScript and TypeScript, and the reference implementation for the two things every tool in this section must get right. It wraps **recast**, which preserves the style of unmodified code rather than pretty-printing the whole file back, and it ships `--dry` (no changes written) and `--print` (transformed files to stdout), so a transform is reviewed as a spec before it lands. `[asserted]` on the mechanism — no token measurement, and the tool is old enough that nobody publishes one.
+- **[LibCST](https://github.com/Instagram/LibCST)** — Python's concrete syntax tree, which keeps formatting and comments instead of discarding them, and one of the third-party replacements for `lib2to3` (deleted in 3.13). Same role as jscodeshift for JS: the tree that lets a transform be precise *and* non-destructive. `[asserted]`
+
+> [!CAUTION]
+> **The codemod's limit is load-bearing, and sharper than it looks.**
+> `react-codemod` ships nineteen transforms and after seven years still has **no
+> class-to-hooks transform** — not an oversight, because `useEffect` merges
+> `componentDidMount`, `componentDidUpdate`, and `componentWillUnmount`, and the
+> dependency array you write "encodes a claim about which values the effect
+> actually reads." That is not a mechanical mapping. And the mechanical tool can
+> be *removed from the language*: Python's `2to3`/`lib2to3` were deprecated in
+> 3.11 and **deleted in 3.13**, because an LL(1) parser cannot parse modern
+> syntax, leaving third-party replacements (LibCST, parso). A codemod is not a
+> free upgrade; the residual is real work, and it is the part where the model
+> earns its tokens.
+
+> **The rule this section reduces to: if a rule can express it, run it; if it needs
+> judgment, the model earns its tokens on exactly that part.** The hybrid is the
+> recommendation — codemod the mechanical tier on the base branch in one reviewable
+> commit, leave markers wherever it refused, then batch the residual into 10–40
+> files per worktree. Two practices keep it honest: a rules file containing
+> **"stop and list it"**, so the agent improvises nothing at file 340 and any
+> divergence arrives as a five-line message rather than a silent policy change; and
+> batch boundaries drawn along dependency lines, so a wrong batch is one reverted
+> commit rather than a merge. Google's constraint is a [Leg 3](#leg-3--lifetime)
+> argument, not a speed one — a 400-file pull request "is not reviewed, it is
+> approved."
 
 ### ✂️ Prune output at the tool boundary
 
@@ -1177,7 +1228,15 @@ is a category error.
 So every entry carries three numbers, not one:
 `Δ tokens-in │ Δ tokens-out │ Δ $ / Δ wall-clock`
 
-Anything that only moves the third column is `⚡ serve-side`.
+Anything that only moves the third column is `⚡ serve-side`. Two unrelated
+families live here: **decoding efficiency** (make each token cheaper to produce)
+and **scheduling slack** (pay less for the *same* token by giving up when it is
+computed). The second is the cheaper one to adopt and the one nobody files.
+
+- **[Batch APIs — Anthropic Message Batches](https://platform.claude.com/docs/en/build-with-claude/batch-processing) · [OpenAI Batch](https://platform.openai.com/docs/guides/batch) · [Gemini Batch](https://ai.google.dev/gemini-api/docs/batch-api)** · `Δ tokens 0 │ Δ $ −50%` · `[measured]`
+  Submit many requests asynchronously and the provider schedules them on spare capacity inside a window, returning results as a file. All three majors price batched tokens at **half the synchronous rate — 50% off input, output, and any special tokens** — with no tiering, negotiation, or commitment. Anthropic: most batches complete in **under an hour** against a 24-hour ceiling, up to 100,000 requests or 256 MB per batch, results kept 29 days, and batch runs in a **separate rate-limit pool**, so enqueued work never eats realtime quota. Same model, same weights, same outputs — the trade is scheduling slack, which is why it is `⚡ serve-side` and not a token reduction.
+  ⚡ **The one lever in this list that composes with a [Cache](#%F0%9F%92%BE-cache) lever instead of fighting it.** Anthropic states the multipliers stack, so cached input inside a batch bills at `$3 × 0.5 × 0.1 = $0.15/M` — **95% off list**. Batching changes *when* tokens are computed; caching changes *whether* they are recomputed. Every other row in the [Interaction matrix](#interaction-matrix) is a conflict; this one multiplies. It also leaves every ratio in [🧮 Break-even](#%F0%9F%A7%AE-break-even) untouched: it halves `p`, so both sides of each inequality shrink equally and `h > 0.28` still decides the cache write. The inequality that *does* change is Break-even 5 — a uniform reasoning budget set on synchronous calls is exactly the workload that belongs in a batch.
+  ⚠️ **Two provider asymmetries to check before planning around it.** On OpenAI, prompt caching inside Batch works only on **GPT-5 and later**; Flex processing offers the same 50% with full caching and `prompt_cache_key`, and is the correct primitive there. On Gemini, explicit context caching is supported in batch with published rates while implicit caching is undocumented — the same implicit-versus-explicit split as the Cache section above.
 
 - **[Speculative decoding (ICML 2023)](https://proceedings.mlr.press/v202/leviathan23a/leviathan23a.pdf)** — 2–3× with identical outputs, no retraining. `[measured]`
 - **[SPIRe](https://arxiv.org/html/2504.06419v1)** · `[measured]`
@@ -1221,11 +1280,12 @@ flowchart TD
 | Graph retrieval | ↔ Ingestion cost | GraphRAG-global spends **331k prompt tokens** to answer what vector RAG answers in **879**. The cost moves from the query to the index — same trade as compress ↔ cache, on a different clock. [LazyGraphRAG](https://www.microsoft.com/en-us/research/blog/lazygraphrag-setting-a-new-standard-for-quality-and-cost) exists because of this row: same graph quality, 0.1% of the index cost. |
 | Graph retrieval | ↔ Loop length | In agentic RAG the dominant cost driver is **sequential tool calls**, not retrieval volume — a 5-call session burns ~250k tokens vs 36k for a 3-call session *regardless of documents retrieved* ([ACL 2026](https://aclanthology.org/2026.gem-main.40)). Optimizing the retriever while the loop grows is optimizing the small term. |
 | Structured memory | ↔ Recoverability | Extraction at ingestion fixes a schema before the query is known; anything discarded can't be recovered later. [True Memory](https://arxiv.org/html/2605.04897v1) argues ingestion-time extraction is the wrong primitive and reports higher recall from a single SQLite file. The counter-case — graphs win multi-hop and time — is real. |
+| **Batch discount** | **↗ Cache the prefix** | **The only row here that composes instead of fighting.** Batching changes *when* tokens are computed; caching changes *whether* they are recomputed — so the multipliers stack and cached input in a batch bills at `$3 × 0.5 × 0.1 = $0.15/M`, **95% off list**. Worth stating precisely *because* every other row is a conflict: this is the one place in the list where two levers multiply rather than trade. It also leaves every ratio in [Break-even](#%F0%9F%A7%AE-break-even) intact, since it halves `p` and leaves `r` and `h` alone. |
 
-> **The last two rows are where this list argues with itself.** test-audit's own
-> technique invites the failure the repo exists to catch. Flagged, not resolved.
-> The graph rows have the same shape: the cheapest representation at query time
-> can be the most expensive one to build.
+> **Prune-the-artifact and bounded-goal are where this list argues with itself.**
+> test-audit's own technique invites the failure the repo exists to catch. Flagged,
+> not resolved. The graph rows have the same shape: the cheapest representation at
+> query time can be the most expensive one to build.
 
 [↑ Contents](#contents)
 
