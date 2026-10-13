@@ -22,6 +22,12 @@ properly — baseline stated, method re-runnable, n and a significance test wher
 you have them — put `[measured]` on the first line and expect the methodology
 reviewed like anyone else's. That's the route into the main list.
 
+Maintainers with a number but no harness: **[`harness/docs/submit-a-run.md`](harness/docs/submit-a-run.md)**
+is the runbook — what a reviewer checks, how to run the rig this repo ships, and
+what happens to the entry afterwards. There is also a
+[submission form](.github/ISSUE_TEMPLATE/showcase-submission.yml) for the
+structured start.
+
 ## The rule
 
 **Every entry carries an evidence grade.**
@@ -208,6 +214,17 @@ python .github/scripts/check_annotations.py --urls README.md          # link hea
   the test is whether the README uses it as if it were obvious.
 - **`RESOURCES.md`** is reading material, not entries. Its grades describe how
   much weight a source can bear, not a savings claim.
+- **`SHOWCASE.md`** is maintainer submissions. The author states their own grade,
+  and `[self-reported]` there is a normal, labelled outcome rather than a
+  rejection — the header says so, because a weak section that reads as a strong
+  one misleads people. An independently measured result is promoted into the main
+  list with the measuring party named.
+
+## Measuring, not just listing
+
+**[`harness/docs/submit-a-run.md`](harness/docs/submit-a-run.md)** — how to run
+the paired A/B rig this repo ships, and what a reviewer checks. If your PR adds a
+number rather than an entry, that file is the bar it is held to.
 
 ## License
 

@@ -1,0 +1,115 @@
+name: Showcase submission
+description: Submit your own tool for SHOWCASE.md — self-reported, with the grade yours to state
+labels: [showcase]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        You are submitting a tool you maintain, so the evidence grade is yours to
+        state and it will be stated on the entry. Read
+        [harness/docs/submit-a-run.md](harness/docs/submit-a-run.md) for what a
+        reviewer checks and how to get a number that survives it. **One tool per
+        issue.** The PR itself goes against `SHOWCASE.md`.
+
+        All four criteria are required, no exceptions: FOSS or a real free tier,
+        an additive clause, a number with a baseline, and a link to the repo or
+        docs — not the marketing page.
+
+  - type: input
+    id: repo
+    attributes:
+      label: Repo or docs URL
+      description: The thing a reader can check. Not the landing page.
+      placeholder: https://github.com/owner/repo
+    validations:
+      required: true
+
+  - type: input
+    id: name
+    attributes:
+      label: Project name
+      placeholder: your-tool
+    validations:
+      required: true
+
+  - type: textarea
+    id: mechanism
+    attributes:
+      label: What it does, in one line
+      description: The mechanism, not the pitch. "Wraps tool schemas and expands on demand" — not "powerful AI toolkit".
+    validations:
+      required: true
+
+  - type: textarea
+    id: additive
+    attributes:
+      label: The additive clause
+      description: Which capability is preserved, and which unmeasured cost is removed by using it.
+    validations:
+      required: true
+
+  - type: input
+    id: deltas
+    attributes:
+      label: The three deltas
+      description: tokens-in │ tokens-out │ $ / wall-clock. State the three separately where they differ.
+      placeholder: "Δin −42% │ Δout −12% │ Δ$ −30%"
+    validations:
+      required: true
+
+  - type: textarea
+    id: baseline
+    attributes:
+      label: Baseline
+      description: What did you compare against, and on what tasks? "Feels faster" is not a baseline.
+    validations:
+      required: true
+
+  - type: textarea
+    id: method
+    attributes:
+      label: Method and stamp
+      description: Model, harness, date, n, and a significance test where you have one. Attach or link the report if you ran one.
+      placeholder: |
+        model: ...
+        harness: token-harness / your-own
+        date: 2026-10
+        n: 48 paired · p=0.004
+        quality guard: <metric> unchanged
+    validations:
+      required: true
+
+  - type: dropdown
+    id: grade
+    attributes:
+      label: Grade you are claiming
+      description: |
+        `[self-reported]` — you measured it yourself, baseline and method stated.
+        `[measured]` — a party other than the author ran it; name them below.
+        `[asserted]` — no number yet; tell us what it would take to get one.
+      options:
+        - "[self-reported] — the author measured it"
+        - "[measured] — measured by someone else"
+        - "[asserted] — no number yet"
+    validations:
+      required: true
+
+  - type: input
+    id: measured_by
+    attributes:
+      label: Measured by (if not you)
+      description: Required when the claimed grade is [measured]. A ledger-style row needs someone other than the tool's author behind it.
+
+  - type: checkboxes
+    id: qualify
+    attributes:
+      label: Qualifies
+      options:
+        - label: FOSS, or a free tier that covers real use
+          required: true
+        - label: The capability is preserved; only an unmeasured cost is removed
+          required: true
+        - label: There is a number, however small, and a baseline it is measured against
+          required: true
+        - label: I accept either grade — a [self-reported] entry is a normal, labelled outcome, not a rejection
+          required: true

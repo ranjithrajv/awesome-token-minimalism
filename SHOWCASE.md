@@ -44,6 +44,19 @@ Four criteria. All four, no exceptions.
 - **A press release with a chart in it.** If you can't name the baseline, it
   isn't a number yet.
 
+## How to submit a measurement
+
+The fastest way to a number is to run one yourself. The repo ships its own
+paired A/B rig, so you do not have to guess how a claim should be built:
+
+**[`harness/docs/submit-a-run.md`](harness/docs/submit-a-run.md)** — the four
+fields a reviewer checks, how to run the harness, and what happens after you open
+the PR. Read it before the entry template below; it is short.
+
+Or skip straight to the
+[showcase submission form](.github/ISSUE_TEMPLATE/showcase-submission.yml) if you
+already have a report.
+
 ## Entry format
 
 Copy this exactly. The linter reads the first line, so the grade goes there.
@@ -62,12 +75,25 @@ and it's worth taking: `[measured]` is the strongest grade this list has.
 
 ## Current showcase
 
-Nothing here yet. Be the first, or the second — a showcase with several entries
-is more useful to a reader than one with none.
+**Nothing here yet.** Be the first, or the second — a showcase with several
+entries is more useful to a reader than one with none.
 
-Open a PR against [`SHOWCASE.md`](SHOWCASE.md). One entry per PR. If a number
-is stale, say what changed and when — staleness is not a reason to remove an
-entry, silence is.
+Three routes in, in increasing order of effort:
+
+1. **You have a number already** — fill the
+   [submission form](.github/ISSUE_TEMPLATE/showcase-submission.yml), then open a
+   PR against [`SHOWCASE.md`](SHOWCASE.md) using the template above.
+2. **You can run a harness** — follow
+   [`harness/docs/submit-a-run.md`](harness/docs/submit-a-run.md), run your tool
+   against the 48-task suite, and send the report with the entry. A report with a
+   baseline, a method, and a quality guard also earns a row on
+   [the leaderboard](harness/LEADERBOARD.md).
+3. **You want someone else to measure it** — say so in the issue. An independent
+   measurement is what turns a showcase entry into a main-list one, and the
+   [leaderboard](harness/LEADERBOARD.md) admits runs from anyone.
+
+One entry per PR. If a number is stale, say what changed and when — staleness is
+not a reason to remove an entry, silence is.
 
 ---
 
@@ -86,5 +112,6 @@ same one the main list uses, and `[self-reported]` is never presented as
 `[measured]`. A reader who knows the difference between the sections is not misled.
 A reader who doesn't is better served by an obvious label than by a quiet omission.
 
-Related: [Contributing](CONTRIBUTING.md) · [Token ledger](README.md#token-ledger) ·
+Related: [Contributing](CONTRIBUTING.md) · [Submit a measurement](harness/docs/submit-a-run.md) ·
+[Token ledger](README.md#token-ledger) ·
 [Evidence grades](README.md#evidence-grades)

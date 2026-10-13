@@ -13,9 +13,10 @@ An awesome list plus its own measurement layer. The content docs are
 result writeups; `.github/scripts/check_annotations.py` is the CI gate. The rest
 is scaffolding and metadata (`CITATION.cff`, `LICENSE`).
 
-`SHOWCASE.md` is the one place a maintainer submits their own tool. The grade is
-theirs to state there, which is why the file labels the distinction instead of
-blending it with the independently assembled list.
+`SHOWCASE.md` is the one place a maintainer submits their own tool, and
+`harness/docs/submit-a-run.md` is the runbook for producing a number that
+survives review. The grade is theirs to state there, which is why the file labels
+the distinction instead of blending it with the independently assembled list.
 
 ## The one rule
 
