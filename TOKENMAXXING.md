@@ -83,12 +83,14 @@ Grades mean what they mean in the list — `[measured]`, `[self-reported]`,
 
 ## Ten root causes
 
-Each cause links to the cases that demonstrate it.
+Each cause links to the cases that demonstrate it and, where there is one, to the
+unmeasured default in [Anti-patterns](ANTI-PATTERNS.md) that usually produces it.
 
 1. **It optimizes per-request, not per-task.** Shrinking one call while causing
    re-fetching is net-negative. The unit is tokens-per-task
    ([Laws](README.md#laws)) — see [§7](#7-the-invisible-line-items-reasoning-spend)
-   and [§15](#15-lifetime-what-you-emit-you-pay-for-forever).
+   and [§15](#15-lifetime-what-you-emit-you-pay-for-forever). The default behind
+   it: [dump-and-read retrieval](ANTI-PATTERNS.md#7-dump-and-read-retrieval).
 2. **It mistakes volume for capability.** Performance degrades as input grows,
    well before any stated limit — see
    [Effective context](README.md#%F0%9F%93%8F-effective-context),
@@ -100,20 +102,27 @@ Each cause links to the cases that demonstrate it.
    and [§7](#7-the-invisible-line-items-reasoning-spend).
 4. **It ships as defaults, not decisions.** Eager schemas, thinking everywhere,
    uniform budgets: nobody chose them, so nobody priced them
-   ([Anti-patterns](README.md#anti-patterns)) — see
+   ([Anti-patterns](ANTI-PATTERNS.md)) — see
    [§3](#3-the-tool-schema-tax), [§14](#14-instruction-files-the-tax-you-write-yourself),
-   and [§16](#16-the-long-tail-everyday-defaults).
+   and [§16](#16-the-long-tail-everyday-defaults). The defaults behind it:
+   [eagerly-loaded tool schemas](ANTI-PATTERNS.md#1-eagerly-loaded-tool-schemas)
+   and [duplicated instruction files](ANTI-PATTERNS.md#5-duplicated-instruction-files).
 5. **It compounds multiplicatively.** N× sampling, multi-agent fan-out, and
    sequential loops turn one decision into a bill multiplier — see
-   [§4](#4-retries-loops-and-unbounded-agents).
+   [§4](#4-retries-loops-and-unbounded-agents). The defaults behind it:
+   [unbounded background agents](ANTI-PATTERNS.md#10-unbounded-background-agents)
+   and [N× self-consistency sampling](ANTI-PATTERNS.md#8-n-self-consistency-sampling).
 6. **It moves costs rather than removing them.** CAG buys speed with resident
    memory; GraphRAG moves query cost to the index; compression spends the cache
    — see [§5](#5-graph-and-retrieval-over-build) and
-   [§6](#6-managing-context-and-cache).
+   [§6](#6-managing-context-and-cache). The defaults behind it:
+   [assuming you have a cache](ANTI-PATTERNS.md#15-assuming-you-have-a-cache)
+   and [long TTLs on caches nobody re-reads](ANTI-PATTERNS.md#16-long-ttls-on-caches-nobody-re-reads).
 7. **Its optimizers often cost more.** Several measured "token savers" raised the
    bill, and a deletion feature that re-fires every turn quietly spends money
    ([Token ledger](README.md#token-ledger)) — see
-   [§12](#12-optimizers-that-cost-more).
+   [§12](#12-optimizers-that-cost-more). The default behind it:
+   [savings counters treated as evidence](ANTI-PATTERNS.md#12-savings-counters-treated-as-evidence).
 8. **It degrades accuracy as it spends.** Overthinking drifts, distractors
    compete, and over-tight budgets backfire — see
    [§2](#2-seeing-the-error-context-and-attention) and
@@ -328,7 +337,7 @@ Four defaults that leak tokens without a headline number:
   ([§6](#6-managing-context-and-cache)).
 - **Semantic caching** — saves the most of any mechanism here and carries the
   failure mode nobody measures: a confidently wrong answer
-  ([open problem](README.md#open-problems)).
+  ([open problem](OPEN-PROBLEMS.md)).
 
 ---
 
@@ -401,9 +410,9 @@ Every failure above reduces to two numbers and a receipt:
 ## See also
 
 - [Token ledger](README.md#token-ledger) — advertised vs. independently measured
-- [Anti-patterns](README.md#anti-patterns) — the defaults that produced these bills
+- [Anti-patterns](ANTI-PATTERNS.md) — the defaults that produced these bills
 - [Interaction matrix](README.md#interaction-matrix) — where the levers fight each other
-- [Open problems](README.md#open-problems) — what nobody has measured yet
+- [Open problems](OPEN-PROBLEMS.md) — what nobody has measured yet
 - [Resources](RESOURCES.md) — the primary sources behind the catalog
 - [Glossary](GLOSSARY.md) — the terms this catalog assumes
 - [Contributing](CONTRIBUTING.md) — the grade vocabulary and the additive clause

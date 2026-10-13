@@ -50,8 +50,8 @@ the first. The bill for the third is the one nobody has instrumented.
 - [🧮 Break-even](#%F0%9F%A7%AE-break-even) — the arithmetic that settles those arguments
 - [Laws](#laws)
 - [Token ledger](#token-ledger) — advertised vs. measured
-- [Open problems](#open-problems) — nobody has measured these
-- [Anti-patterns](#anti-patterns) — defaults that shipped unmeasured
+- [Open problems](OPEN-PROBLEMS.md) — fifteen questions nobody has measured
+- [Anti-patterns](ANTI-PATTERNS.md) — nineteen defaults that shipped unmeasured
 - [Related](#related) — adjacent lists, and this repo's measurement layer
 - [Contributing](#contributing)
 - [Citation](#citation) — how to reference this list
@@ -72,7 +72,7 @@ you're here:
 | **Build an agent** | [Effective context](#%F0%9F%93%8F-effective-context) → [Select](#%F0%9F%94%8E-select) → [Isolate](#%F0%9F%A7%B1-isolate) → [Reason less](#%F0%9F%A7%A0-reason-less) → [Laws](#laws) |
 | **Make an agent more accurate** | [The accuracy gain](#the-accuracy-gain) → [Select](#%F0%9F%94%8E-select) (decision surface) → [Reason less](#%F0%9F%A7%A0-reason-less) (drift) → [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one) (delete without losing guards) |
 | **Justify it upward** | [The case](#the-case) (money, time, energy) → [🧮 Break-even](#%F0%9F%A7%AE-break-even) (the arithmetic) → [Token ledger](#token-ledger) (the cautionary half) |
-| **Review a tool someone recommended** | [Evidence grades](#evidence-grades) → [Token ledger](#token-ledger) → [Anti-patterns](#anti-patterns) |
+| **Review a tool someone recommended** | [Evidence grades](#evidence-grades) → [Token ledger](#token-ledger) → [Anti-patterns](ANTI-PATTERNS.md) |
 
 Two conventions worth knowing before you start:
 
@@ -82,7 +82,7 @@ Two conventions worth knowing before you start:
   [Token ledger](#token-ledger). The grade is the list, not the commentary.
 - **The enemy is bloat, never capability.** Every entry keeps the feature and
   removes an unmeasured cost. If a technique can't be written that way, it's in
-  [Anti-patterns](#anti-patterns) instead.
+  [Anti-patterns](ANTI-PATTERNS.md) instead.
 
 ---
 
@@ -598,7 +598,7 @@ central question settled rather than open, at least for these domains.
 
 > [!CAUTION]
 > **Cost of these graphs is not zero — it's tool schemas.** Each MCP server
-> here adds 10+ tools to every turn, which is [anti-pattern #1](#anti-patterns)
+> here adds 10+ tools to every turn, which is [anti-pattern #1](ANTI-PATTERNS.md#1-eagerly-loaded-tool-schemas)
 > wearing a useful hat. Load them through [progressive
 > discovery](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/docs/2026-07-28/develop/clients/client-best-practices.mdx)
 > or a [tool search](https://www.anthropic.com/engineering/advanced-tool-use)
@@ -1490,73 +1490,27 @@ useful, and not the same thing as an independent measurement.
 
 ## Open problems
 
-Real gaps. Nobody has measured these.
+Fifteen real gaps, numbered so they can be cited. **Nobody has measured these**,
+and the three most consequential are the ones where an answer would change a
+recommendation in this list rather than add a footnote to it:
 
-<details>
-<summary>14 unmeasured questions</summary>
+- **Is there an independently audited context-window profiler?** Most of
+  [Leg 0](#leg-0--measure) is `[self-reported]`; the `[measured]` entries there
+  audit instruction files and bills, not per-turn context composition.
+- **What is the energy per query for a non-autoregressive decision model?** Every
+  energy figure here is per-query at autoregressive inference, and the model-class
+  argument — the largest single reduction on the Output leg — rests on an
+  expectation nobody has published a Wh/query for. **"It should be much lower" is
+  not a measurement.** → [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate)
+- **What is the break-even query volume for a graph index?** ContextRAG calls
+  itself "most attractive for low- and medium-query workloads," but nobody has
+  published the curve — and the first term it needs, indexing cost, is reported
+  nowhere by default.
 
-1. **Where does a retention bar stop being worth its tokens?** test-audit's
-   retention bar is prose in a skill: it costs tokens on every run and slows
-   every deletion. Obviously worth it at 400k LOC. Where's the threshold?
-2. **Is there a quality-preserving minimum for any artifact?** ponytail and CoD
-   both found *accuracy rising* as output shrank. Is there a floor, and how do
-   you know you've hit it without a benchmark?
-3. **Does lifetime bloat compound?** If token 3 of a test file costs more than
-   token 1 (because later tokens only get read when the first fails), the
-   lifetime curve isn't linear and every deletion decision changes.
-4. **What is the *correct* unit for compression loss?** tokens-per-task is
-   better than tokens-per-request, but it requires knowing the re-fetch rate,
-   which is unmeasured almost everywhere.
-5. **Nobody has an independently audited context-window profiler.** Most of
-   [Leg 0](#leg-0--measure) is `[self-reported]`; the `[measured]` entries there
-   audit instruction files and bills, not per-turn context composition.
-6. **Is per-model brevity tuning worth it?** Verbosity compensation suggests
-   conciseness is model-specific. Whether one ruleset can serve three model
-   families, or needs to be three rulesets, is unmeasured.
-7. **Does bounded-goal cleanup invite reward hacking at scale?** The 400k number
-   came with a coverage guard that coverage-gaming could satisfy.
-8. **What is the break-even query volume for a graph index?** ContextRAG says it
-   is "most attractive for low- and medium-query workloads, especially when
-   corpora are re-indexed frequently" — but nobody has published the curve. You
-   would need `index_cost / (per_query_vector_saving × queries)` against corpus
-   churn, and no framework reports the first term by default. GraphRAG's own
-   indexing-cost tracking was a [user feature request](https://github.com/microsoft/graphrag/issues/1153),
-   not a default.
-9. **Is graph structure or extraction the thing that matters?** ContextRAG and
-   TERAG both drop LLM-written edges and keep the graph, with large token wins.
-   Nobody has cleanly separated "structure helps retrieval" from "LLM-written
-   structure is expensive," which is why the token column and the relevance
-   column disagree so consistently across the [table above](#%F0%9F%95%B8%EF%B8%8F-graph-engineering).
-10. **Where is the delete↔cache crossover?** Context editing wins on tokens *and*
-    performance in Anthropic's own eval, but clearing invalidates the prefix — and
-    nobody has published hit rate *before and after* enabling it. Without that
-    pair of numbers, "should we turn on context editing?" has no evidence-based
-    answer outside one vendor's internal benchmark.
-11. **Is there a hit rate above which preloading always wins?** CAG is ~10–17×
-    faster at query time but needs *more* resident memory (18GB vs 12GB on
-    HotpotQA) and a corpus stable enough to precompute. Break-even depends on
-    query volume, corpus churn, and hit rate simultaneously — three variables, no
-    published curve.
-12. **Semantic caching is deliberately absent.** It saves more than any mechanism
-    in this list and it is the one most likely to return a confidently wrong
-    answer. Omitted rather than uncritically included; somebody should measure its
-    false-hit rate.
-13. **What is the energy per query for a non-autoregressive decision model?**
-    Every energy figure here is per-query at autoregressive inference. System One
-    models remove the sequential decode loop, so they should be dramatically
-    lower — but nobody has published a Wh/query for one, and the architecture is
-    the whole reason to expect a difference. **"It should be much lower" is not a
-    measurement**, and this is currently the largest unquantified claim the
-    model-class argument rests on.
-    → [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate)
-14. **Does the input side get cheaper too, or only the output side?** A decision
-    model still reads the full state and still has a token budget
-    (`head_max_len`), but it has no KV cache to reuse across turns and no prefix
-    to cache. Whether that makes it better or worse than a cached LLM prefix for
-    high-volume, repeated-state workloads is unmeasured — and it is exactly the
-    case where the LLM's 0.1× cache read might win.
-
-</details>
+The other twelve — retention-bar thresholds, quality floors, the delete↔cache
+crossover, semantic-cache false-hit rates, the codemod-versus-agent token delta —
+are in **[OPEN-PROBLEMS.md](OPEN-PROBLEMS.md)**. Answering one outranks any
+number you could add to an existing section.
 
 [↑ Contents](#contents)
 
@@ -1564,85 +1518,20 @@ Real gaps. Nobody has measured these.
 
 ## Anti-patterns
 
-Each one names a **default that shipped unmeasured**, with a receipt. The same
-defaults appear as graded cases in [Token Maxxing](TOKENMAXXING.md#the-cases);
-this section is the index, that one the catalog.
+Nineteen defaults that shipped unmeasured, each with a receipt. The three that
+cost the most tokens per turn, because they fire on every request whether or not
+anyone asked:
 
-<details>
-<summary>19 defaults that shipped unmeasured</summary>
+- **Eagerly-loaded tool schemas.** `tools/list` is a flat payload injected every
+  turn, and no partial-loading primitive exists in the spec.
+- **Invisible reasoning spend.** 7.2× total call cost, an unchanged visible
+  response, no line item on the dashboard.
+- **Assuming you have a cache.** Authentication silently decides it — same model,
+  same prefix, same code, 10× the price.
 
-1. **Eagerly-loaded tool schemas.** `tools/list` is a flat payload injected every
-   turn; no partial-loading primitive exists in the spec, so every workaround
-   lives above it. [GitHub MCP: 91 tools, ~17.6k tokens/session](https://www.atlassian.com/blog/developer/mcp-compression-preventing-tool-bloat-in-ai-agents).
-   *Worst single tool observed: 557,766 average output tokens; 16 tools exceed 128k* ([MSR](https://www.microsoft.com/en-us/research/blog/tool-space-interference-in-the-mcp-era-designing-for-agent-compatibility-at-scale)).
-2. **Uncleared tool results.** A turn-3 result still costing 8k tokens at turn 20.
-3. **Invisible reasoning spend.** 7.2× total call cost, unchanged visible
-   response, no line item on the dashboard.
-4. **Uniform reasoning budgets.** Thinking enabled on 100% of calls when ~60%
-   don't need it — 40–70% of the output bill, wasted.
-5. **Duplicated instruction files.** The same three rules pasted into
-   `CLAUDE.md`, `.cursor/rules`, and `copilot-instructions.md`, loaded every turn.
-   Measure the overlap, not just the total.
-6. **Whole-file rewrite as default.** Robust and expensive, chosen without
-   conditioning on scope. Cost is real; so is the whitespace-mismatch failure.
-7. **Dump-and-read retrieval.** Raw output into context where `jq` or `--stat`
-   would do.
-8. **N× self-consistency sampling.** An accuracy method that multiplies the most
-   expensive resource. Measure the marginal gain per sample.
-9. **Unrouted vector-only retrieval.** No rerank, no citations, no audit trail.
-   Also see the [RAG-is-dead roundup](https://www.forbes.com/councils/forbestechcouncil/2026/07/09/rag-didnt-die-it-moved-up-the-stack) —
-   retrieval moved up the stack; stuffing pays ~1000× for degraded recall.
-10. **Unbounded background agents.** 14 agents × ~80k tokens, zero usable output
-    ([claude-code #25714](https://github.com/anthropics/claude-code/issues/25714)). Needs a
-    `remaining_context − (est_results × n_agents) > margin` check before launching.
-11. **Test bloat.** Models over-test every tiny change. See
-    [Leg 3](#leg-3--lifetime) — and note that commit history is the audit trail.
-12. **Savings counters treated as evidence.** `rtk` reported 99.8% savings while
-    the bill rose. Only the bill counts.
-13. **GraphRAG-global as the default answer to "we need better retrieval."**
-    **331,375 average prompt tokens** against vector RAG's 879, and it scales with
-    corpus size — 7,800 → 40,000 as query difficulty rises
-    ([arXiv 2506.05690](https://arxiv.org/html/2506.05690v3)). The capability being
-    added is answering dataset-wide questions. The cost is being paid on every
-    query, including the 90% that are single-hop lookups vector RAG handles at
-    879 tokens. Route by question type instead.
-14. **LLM-written edges and community summaries at ingestion.** The expensive
-    half of every graph pipeline. Extraction-free construction reaches comparable
-    graph quality at **1,043× fewer indexing tokens**
-    ([ContextRAG](https://arxiv.org/pdf/2605.19735)); LazyGraphRAG matches graph
-    answer quality at **0.1% of the index cost**. If a join can produce the edge,
-    an LLM shouldn't be writing it.
-15. **Assuming you have a cache.** Authentication silently decides it. Gemini
-    CLI gets context caching on API-key or Vertex auth and **none at all on
-    OAuth**, because Code Assist can't create cached content. Same model, same
-    prefix, same code — 10× the price. Check the provider's auth path before
-    budgeting a single cached token.
-16. **Long TTLs on caches nobody re-reads.** Gemini explicit caching bills
-    storage **per hour per million tokens**. A generous TTL on a corpus that
-    went stale is not a safety margin; it's a recurring bill for content you
-    stopped reading. Re-read frequency, not caution, should set the TTL.
-17. **Enabling deletion without watching the hit rate.** The reported wins are
-    real (+29% performance, −84% tokens) and the reported cost is real
-    (cache invalidation on every clear). Which one dominates *your* workload is
-    unknowable without a hit-rate metric — see [Law 7](#laws).
-18. **A deletion pass that doesn't persist its own state.**
-    [`ClearToolUsesEdit`](https://github.com/langchain-ai/langchain/issues/37815)
-    re-fires every turn against a checkpointer, re-clearing already-cleared
-    results and paying for a fresh token count each time. Deletion bugs cost
-    money in the direction people forget to check.
-19. **A generative LLM for a bounded decision.** Routing a ticket, scoring
-    urgency, gating a tool call, or picking one of twenty labels does not need a
-    text stream — it needs a `choice`, a `score`, or a `noul`. A generative model
-    is asked to *write* the answer and then have it parsed, which adds output
-    tokens, latency, a schema validation step, and a hallucination surface where
-    none was required. [Jev's independent benchmark](https://arxiv.org/abs/2609.37647)
-    ran **346,009 classification requests for under US$10**; the same work
-    against a frontier LLM is a different order of magnitude. This is the
-    largest single reduction on the Output leg and it is a *model* choice, not a
-    prompt. ⚠️ The exception is load-bearing: anything needing explanation,
-    multi-step reasoning, or an unbounded answer still needs the LLM.
-
-</details>
+The full index, with the receipt for each, is in **[ANTI-PATTERNS.md](ANTI-PATTERNS.md)**.
+The same defaults appear as graded cases in [Token Maxxing](TOKENMAXXING.md#the-cases);
+that file is the catalog, this one the index.
 
 [↑ Contents](#contents)
 
@@ -1656,6 +1545,8 @@ Adjacent lists, linked rather than duplicated:
 - [Resources](RESOURCES.md) — external frameworks, essays, and analysis about token minimalism.
 - [Token Maxxing](TOKENMAXXING.md) — the negative-result catalog: cited blow-ups, from fleet-scale bills to optimizers that cost more.
 - [Showcase](SHOWCASE.md) — **for project maintainers.** Submit your own tool; the grade is yours to state. Held to the same four criteria as the main list: FOSS or a real free tier, an additive clause, a number with a baseline, and the repo linked. A showcase entry that reaches `[measured]` gets promoted to the main list.
+- [Anti-patterns](ANTI-PATTERNS.md) — nineteen defaults that shipped unmeasured, each with a receipt.
+- [Open problems](OPEN-PROBLEMS.md) — fifteen questions nobody has measured, numbered so they can be cited.
 - [Awesome MCP Servers](https://github.com/punkpeye/awesome-mcp-servers) — the catalogs. Check your schema cost before connecting one.
 - [agentskills.io](https://agentskills.io/) · [spec](https://agentskills.io/specification) — three-tier progressive disclosure: ~100 tokens of catalog per skill, <5k instructions on activation, unlimited resources on access.
 - [AGENTS.md](https://agents.md/) — nested-scoped instructions, 60k+ projects, stewarded by the Agentic AI Foundation under the Linux Foundation.
@@ -1679,7 +1570,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). The short version:
 3. **State which leg and which number moved.** `in` / `out` / `lifetime` /
    `⚡ serve-side`, plus `Δ tokens-in │ Δ tokens-out │ Δ $ / Δ wall-clock`.
 4. **Every technique entry needs an additive clause.** "Keep the capability, drop
-   the cost." If you can't write one, it belongs in [Anti-patterns](#anti-patterns).
+   the cost." If you can't write one, it belongs in [Anti-patterns](ANTI-PATTERNS.md).
 5. **Negative results are the most valuable contributions here.** If you measured
    something that didn't work, that's a first-class entry.
 

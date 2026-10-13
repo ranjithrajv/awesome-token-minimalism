@@ -1,22 +1,25 @@
 # AGENTS.md
 
 Agent instructions for this repository. Deliberately short — this repo's own
-[duplicated-instruction-file anti-pattern](README.md#anti-patterns) treats
+[duplicated-instruction-file anti-pattern](ANTI-PATTERNS.md) treats
 `AGENTS.md`/`CLAUDE.md` rules as a per-turn tax, and the profilers in
 [Leg 0](README.md#leg-0--measure) are how you check it.
 
 ## What this repo is
 
 An awesome list plus its own measurement layer. The content docs are
-`README.md`, `TOKENMAXXING.md`, `GLOSSARY.md`, `RESOURCES.md`, `SHOWCASE.md`, and
-`CONTRIBUTING.md`; `harness/` and `posts/` hold the paired A/B rig and its
-result writeups; `.github/scripts/check_annotations.py` is the CI gate. The rest
-is scaffolding and metadata (`CITATION.cff`, `LICENSE`).
+`README.md`, `TOKENMAXXING.md`, `GLOSSARY.md`, `RESOURCES.md`, `SHOWCASE.md`,
+`ANTI-PATTERNS.md`, `OPEN-PROBLEMS.md`, and `CONTRIBUTING.md`; `harness/` and
+`posts/` hold the paired A/B rig and its result writeups;
+`.github/scripts/check_annotations.py` is the CI gate. The rest is scaffolding
+and metadata (`CITATION.cff`, `LICENSE`).
 
-`SHOWCASE.md` is the one place a maintainer submits their own tool, and
-`harness/docs/submit-a-run.md` is the runbook for producing a number that
-survives review. The grade is theirs to state there, which is why the file labels
-the distinction instead of blending it with the independently assembled list.
+`README.md` is the index and carries the entries; `ANTI-PATTERNS.md` and
+`OPEN-PROBLEMS.md` are the two catalogs it points at (nineteen unmeasured
+defaults, fifteen unmeasured questions), one file each, no details toggle.
+`SHOWCASE.md` is where a maintainer submits their own tool and
+`harness/docs/submit-a-run.md` is the runbook for a number that survives review
+— the grade is theirs to state, which is why the file labels the distinction.
 
 ## The one rule
 
@@ -39,9 +42,16 @@ python .github/scripts/check_annotations.py README.md                 # must pri
 python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
 python .github/scripts/check_annotations.py RESOURCES.md              # external-resource doc
 python .github/scripts/check_annotations.py TOKENMAXXING.md           # negative-result catalog
+python .github/scripts/check_annotations.py --anchors-only ANTI-PATTERNS.md  # defaults catalog
+python .github/scripts/check_annotations.py --anchors-only OPEN-PROBLEMS.md  # gaps catalog
 python .github/scripts/check_annotations.py --allow-empty SHOWCASE.md # maintainer submissions
 python .github/scripts/check_annotations.py --urls README.md          # link extraction
 ```
+
+The two catalogs carry receipts and cross-links but no `- **[` entries, so they
+run with `--anchors-only` — the same mode as `GLOSSARY.md`. Do not add
+`--allow-empty` to force them through `check_entries`; there is nothing there to
+grade.
 
 The script runs the same gate as CI and checks four things: evidence grades,
 linked entries, same-file `#anchor` targets, and cross-file `other.md#anchor`
@@ -61,7 +71,7 @@ it flags an anchor, fix the anchor. Do not relax the check.
   stated when they differ: `Δ tokens-in │ Δ tokens-out │ Δ $ / Δ wall-clock`.
 - **Every technique entry needs an additive clause** — the capability is
   preserved, the unmeasured cost is removed. If you cannot write one, the entry
-  belongs in [Anti-patterns](README.md#anti-patterns).
+  belongs in [Anti-patterns](ANTI-PATTERNS.md).
 - **Negative results are first-class.** A `[negative]` entry with real
   methodology is worth more than another `[asserted]` one.
 - **Numbers decay.** Anything `[measured]` needs model, harness, date, and n

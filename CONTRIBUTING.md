@@ -127,7 +127,7 @@ unmeasured cost is removed.
 - ❌ "Stop using chain-of-thought."
 
 If you can't write the additive clause, the entry is either `[asserted]` or it
-belongs in [Anti-patterns](README.md#anti-patterns). Both are fine outcomes. The
+belongs in [Anti-patterns](ANTI-PATTERNS.md). Both are fine outcomes. The
 failure mode we're guarding against is a technique post that reads like "you have
 too much stuff" — that's the tone that gets lists like this dismissed as
 cost-saving blogs, and it's why every entry here needs a number.
@@ -155,7 +155,7 @@ about a number. That is the register.
 
 ## Open problems
 
-The list has a standing [Open problems](README.md#open-problems) section with
+The list has a standing [Open problems](OPEN-PROBLEMS.md) section with
 fourteen questions nobody has answered. If you can answer one — even partially — that
 outranks any number you could add to an existing section. Two worth calling out:
 
@@ -200,15 +200,23 @@ python .github/scripts/check_annotations.py README.md                 # grades +
 python .github/scripts/check_annotations.py --anchors-only GLOSSARY.md
 python .github/scripts/check_annotations.py RESOURCES.md
 python .github/scripts/check_annotations.py TOKENMAXXING.md
+python .github/scripts/check_annotations.py --anchors-only ANTI-PATTERNS.md
+python .github/scripts/check_annotations.py --anchors-only OPEN-PROBLEMS.md
 python .github/scripts/check_annotations.py --urls README.md          # link health
 ```
 
 ### Which file, which format
 
-- **`README.md`** is the list. Every bullet beginning `- **[` needs a grade on
-  its first line.
+- **`README.md`** is the list, and the index for the rest. Every bullet beginning
+  `- **[` needs a grade on its first line.
 - **`TOKENMAXXING.md`** is the negative-result catalog — the blow-ups, with
   their numbers — graded the same way.
+- **`ANTI-PATTERNS.md`** and **`OPEN-PROBLEMS.md`** are the two catalogs the
+  README used to inline: receipts and cross-links, no `- **[` entries, so they
+  run with `--anchors-only`. Numbered items become `### N. Title` headings so
+  they can be deep-linked, and the numbers are stable — cite them that way.
+  Adding a *number* rather than an entry? The bar is
+  [`harness/docs/submit-a-run.md`](harness/docs/submit-a-run.md).
 - **`GLOSSARY.md`** is definitions, and carries no grades. It is checked for
   anchors only. Add a term when a contributor reasonably asks what it means —
   the test is whether the README uses it as if it were obvious.
@@ -219,12 +227,6 @@ python .github/scripts/check_annotations.py --urls README.md          # link hea
   rejection — the header says so, because a weak section that reads as a strong
   one misleads people. An independently measured result is promoted into the main
   list with the measuring party named.
-
-## Measuring, not just listing
-
-**[`harness/docs/submit-a-run.md`](harness/docs/submit-a-run.md)** — how to run
-the paired A/B rig this repo ships, and what a reviewer checks. If your PR adds a
-number rather than an entry, that file is the bar it is held to.
 
 ## License
 
