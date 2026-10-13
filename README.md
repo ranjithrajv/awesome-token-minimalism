@@ -21,12 +21,12 @@ the first. The bill for the third is the one nobody has instrumented.
 - [Resources](RESOURCES.md) — external frameworks, essays, and analysis
 - [Token Maxxing](TOKENMAXXING.md) — the negative results, from fleet-scale bills to optimizers that cost more
 - [Showcase](SHOWCASE.md) — for maintainers: submit your own tool, with the grade stated honestly
-- [The case](#the-case) — money, time, energy, and why less bloat is *more* correct
+- [The case](#the-case) — four gains, one lever, and the accuracy leads
   - [Four gains, one lever](#four-gains-one-lever) — the numbers
+  - [The accuracy gain](#the-accuracy-gain) — five mechanisms, measured
   - [Why one lever moves all four](#why-one-lever-moves-all-four) — the mechanism, and its escape hatch
   - [The other lever on the same bill](#the-other-lever-on-the-same-bill) — tokens × cost-per-token
   - [The scale it adds up to](#the-scale-it-adds-up-to) — TWh, water, and lifecycle
-  - [The accuracy gain](#the-accuracy-gain) — five mechanisms, measured
   - [Where the case breaks](#where-the-case-breaks) — the exceptions, both halves
   - [The rule](#the-rule) — relevance density, not volume
 - [The three legs](#the-three-legs) — the frame everything else hangs on
@@ -71,7 +71,7 @@ you're here:
 | **Cut a bill this week** | [Leg 0](#leg-0--measure) (see the waste) → [Leg 1 · Cache](#%F0%9F%92%BE-cache) and [Leg 2 · Audit](#%F0%9F%93%90-audit) (find the two invisible costs) → [Token ledger](#token-ledger) (don't trust the tool's homepage) |
 | **Build an agent** | [Effective context](#%F0%9F%93%8F-effective-context) → [Select](#%F0%9F%94%8E-select) → [Isolate](#%F0%9F%A7%B1-isolate) → [Reason less](#%F0%9F%A7%A0-reason-less) → [Laws](#laws) |
 | **Make an agent more accurate** | [The accuracy gain](#the-accuracy-gain) → [Select](#%F0%9F%94%8E-select) (decision surface) → [Reason less](#%F0%9F%A7%A0-reason-less) (drift) → [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one) (delete without losing guards) |
-| **Justify it upward** | [The case](#the-case) (money, time, energy) → [🧮 Break-even](#%F0%9F%A7%AE-break-even) (the arithmetic) → [Token ledger](#token-ledger) (the cautionary half) |
+| **Justify it upward** | [The case](#the-case) (accuracy first, then money, time, energy) → [🧮 Break-even](#%F0%9F%A7%AE-break-even) (the arithmetic) → [Token ledger](#token-ledger) (the cautionary half) |
 | **Review a tool someone recommended** | [Evidence grades](#evidence-grades) → [Token ledger](#token-ledger) → [Anti-patterns](ANTI-PATTERNS.md) |
 
 Two conventions worth knowing before you start:
@@ -88,100 +88,40 @@ Two conventions worth knowing before you start:
 
 ## The case
 
-Four gains, one lever. Three are costs you reduce and one is a quality you
-increase.
+Four gains from one lever, and the primary one is not a cost: **less bloat is
+more correct.** Money, time, and energy are what the same lever happens to cut
+on the way there — worth having, and not the reason to believe it.
 
 ### Four gains, one lever
 
-Token minimalism is not an aesthetic. Reducing tokens buys **three costs and one
-quality** at once, and they are the things every engineering budget is made of.
+Token minimalism is not an aesthetic. Reducing tokens buys **a quality gain and
+three cost reductions** at once — and the quality is the primary one, because it
+is the gain a cost-saving framing would price at zero. Bloat is not merely
+expensive; it is *wrong*, and the bill is the receipt, not the point.
 
 ```mermaid
 flowchart LR
     T["fewer tokens"]
+    T ==> A["Accuracy<br/>attention budget · decision surface"]
     T --> M["Money<br/>cache reads 0.1× · output ~5×"]
     T --> W["Time<br/>13–31% faster first token"]
     T --> E["Energy<br/>25–60% from length control"]
-    T --> A["Accuracy<br/>attention budget · decision surface"]
 ```
 
 | Gain | The number |
 |---|---|
+| 🎯 **Accuracy** | The primary gain, and the one a cost framing prices at zero: fewer tokens means **more attention per token** and a smaller [decision surface](#the-accuracy-gain), so accuracy moves *with* the spend rather than against it. Tool Search cut schemas **134k → 8.7k** and took tool selection **49% → 74%**; context editing measured **+29%** agentic-search performance at **−84%** tokens; LongMemEval's focused-vs-full arm wins across every model tested. TALE, MUTO and Chain of Draft all *raise* accuracy while shrinking output. Five mechanisms, [below](#the-accuracy-gain). |
 | 💰 **Money** | Cache reads are **0.1×** input price — a 90% discount. Output is **~5×** input. Reasoning tokens are **>80% of total output cost** on some workloads and usually invisible on the dashboard. Context editing measured **−84% tokens** on a 100-turn eval. Graph indexing done the expensive way is ~**1,000×** the cost of the cheap way. |
 | ⏱️ **Time** | Caching: **13–31%** faster first token. Precomputed KV (CAG): **0.85s vs 9.25s** on HotpotQA — ~11×, up to ~17×. Chain of Draft: **4.2s → 1.0s** per answer. Code-execution harnesses report **~79% faster** on multi-step work. And the failure case nobody prices: agents that exhaust context start *retrying*, and **6 of 13 tool calls** hit context overflow in one measured trace. |
 | 🔋 **Energy** | Response-length control alone is **25–60% energy reduction** with quality preserved — the core answer turns out to be only **42%** of a typical response. Frontier inference is a median of **0.31 Wh/query**; a *reasoning* query at ~5,000 output tokens is **~13×** that. DeepSeek-R1 measured **20.9 Wh/query against 0.21 Wh** for a conventional model — ~100×. A short session can draw ~**0.5 litres of cooling water**. |
 
-### Why one lever moves all four
-
-The mechanism is an asymmetry in how **autoregressive transformers** work:
-
-- **Input tokens are processed in parallel** and their key/value state can be
-  cached and reused. Cheap in wall-clock, cheap in energy, and *deeply*
-  discountable in price.
-- **Output tokens are generated sequentially.** One at a time. Unavoidably —
-  the causal mask makes token *t* depend on every token before it, so sampling
-  cannot be parallelized without changing the model class.
-
-Which is why **energy per query tracks output length and not task
-complexity** — and why output costs 5× while reasoning costs 13×.
-
-So tokens are the upstream quantity. Cut them and all four gains follow. That
-is the whole bet: the same change that lowers the bill also lowers the latency
-*and* the kilowatt-hours *and* the error rate, because they are all metered per
-token.
-
-**And the asymmetry has an escape hatch, which is the logical endpoint of the
-whole argument.** If output is expensive *because* it is serial, the strongest
-move is not shorter output — it is **no output stream at all.** A
-non-autoregressive decision model doesn't generate tokens; it returns a typed
-value from one forward pass. Jev prices output at **$0.00** for exactly this
-reason. See [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — it
-is a different equation, not a smaller number in this one.
-
-### The other lever on the same bill
-
-Everything above reduces the **numerator**. There is a second factor:
-
-```
-total cost  =  tokens  ×  cost-per-token
-                 ↑             ↑
-          this repo     hardware and runtime
-```
-
-A 10× token cut and a 10× cut in cost-per-token compose to 100×. They are
-independent: you can be maximally token-efficient on a wasteful GPU cluster, and
-maximally token-wasteful on a CPU.
-
-The denominator is a different discipline with a different trade. Running
-inference on CPU rather than GPU buys money and energy **by spending latency** —
-it wins decisively at batch = 1 on idle hardware, and loses at sustained
-throughput, tight TTFT SLAs, and long-context prefill. Token minimalism is the
-rarer kind of optimization that saves all three at once.
-
-This list stays on the numerator deliberately. For the hardware half, including
-power-per-inference, PUE, water, and carbon by grid region, see
-[awesome-cpu-first-ai](https://github.com/ranjithrajv/awesome-cpu-first-ai) in
-[Related](#related).
-
-### The scale it adds up to
-
-- Data centres used **~485 TWh** in 2025 — up ~17% in a year — and the IEA
-  projects roughly **950 TWh by 2030**, with AI-focused data centres growing
-  faster still ([IEA, *Key Questions on Energy and AI*](https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary)). See
-  [Token Maxxing §13](TOKENMAXXING.md#13-the-meter-nobody-reads-energy-and-water)
-  for the fuller energy accounting.
-- Inference can be up to **90% of a model's total lifecycle energy**. Training
-  is the headline; inference is the bill.
-- Response length is the most direct lever anyone outside a datacentre has, and
-  the one that requires no new hardware, no new model, and no new code.
-
 ### The accuracy gain
 
-Everything above is about spending less. This is about **being more right**, and
-it is the most counter-intuitive claim in the list: token minimalism is sold as
-a cost play, but in the cases that have been measured properly it is a *quality*
-play first. Removing bloat does not trade accuracy for money — it recovers
-accuracy that the bloat was destroying.
+This is about **being more right**, and it is the primary gain in the list. It
+is also the most counter-intuitive one: token minimalism is sold as a cost play,
+but in the cases that have been measured properly it is a *quality* play first.
+Removing bloat does not trade accuracy for money — it recovers accuracy that the
+bloat was destroying.
 
 The inversion is worth stating plainly, because the reflex is wrong in a
 specific, testable way:
@@ -248,6 +188,69 @@ tool** — both while reducing tokens, and their stated mechanism is that the mo
 becoming the microcompact failure.
 → Practices: [Delete](#%F0%9F%97%91%EF%B8%8F-delete) · [Retention bars](#%F0%9F%AA%9E-retention-bars--dont-delete-without-one)
 
+### Why one lever moves all four
+
+The mechanism is an asymmetry in how **autoregressive transformers** work:
+
+- **Input tokens are processed in parallel** and their key/value state can be
+  cached and reused. Cheap in wall-clock, cheap in energy, and *deeply*
+  discountable in price.
+- **Output tokens are generated sequentially.** One at a time. Unavoidably —
+  the causal mask makes token *t* depend on every token before it, so sampling
+  cannot be parallelized without changing the model class.
+
+Which is why **energy per query tracks output length and not task
+complexity** — and why output costs 5× while reasoning costs 13×.
+
+So tokens are the upstream quantity. Cut them and all four gains follow. That
+is the whole bet: the same change that raises accuracy also lowers the bill, the
+latency, and the kilowatt-hours, because they are all metered per token.
+
+**And the asymmetry has an escape hatch, which is the logical endpoint of the
+whole argument.** If output is expensive *because* it is serial, the strongest
+move is not shorter output — it is **no output stream at all.** A
+non-autoregressive decision model doesn't generate tokens; it returns a typed
+value from one forward pass. Jev prices output at **$0.00** for exactly this
+reason. See [Decide, don't generate](#%F0%9F%8E%AF-decide-dont-generate) — it
+is a different equation, not a smaller number in this one.
+
+### The other lever on the same bill
+
+Everything above reduces the **numerator**. There is a second factor:
+
+```
+total cost  =  tokens  ×  cost-per-token
+                 ↑             ↑
+          this repo     hardware and runtime
+```
+
+A 10× token cut and a 10× cut in cost-per-token compose to 100×. They are
+independent: you can be maximally token-efficient on a wasteful GPU cluster, and
+maximally token-wasteful on a CPU.
+
+The denominator is a different discipline with a different trade. Running
+inference on CPU rather than GPU buys money and energy **by spending latency** —
+it wins decisively at batch = 1 on idle hardware, and loses at sustained
+throughput, tight TTFT SLAs, and long-context prefill. Token minimalism is the
+rarer kind of optimization that saves all three at once.
+
+This list stays on the numerator deliberately. For the hardware half, including
+power-per-inference, PUE, water, and carbon by grid region, see
+[awesome-cpu-first-ai](https://github.com/ranjithrajv/awesome-cpu-first-ai) in
+[Related](#related).
+
+### The scale it adds up to
+
+- Data centres used **~485 TWh** in 2025 — up ~17% in a year — and the IEA
+  projects roughly **950 TWh by 2030**, with AI-focused data centres growing
+  faster still ([IEA, *Key Questions on Energy and AI*](https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary)). See
+  [Token Maxxing §13](TOKENMAXXING.md#13-the-meter-nobody-reads-energy-and-water)
+  for the fuller energy accounting.
+- Inference can be up to **90% of a model's total lifecycle energy**. Training
+  is the headline; inference is the bill.
+- Response length is the most direct lever anyone outside a datacentre has, and
+  the one that requires no new hardware, no new model, and no new code.
+
 ### Where the case breaks
 
 Both halves of the argument have exceptions, and they are worth knowing before
@@ -270,7 +273,7 @@ context," not "less context"*:
 
 - **Longer-and-better can win.** More curated few-shot examples genuinely raise
   accuracy. The lever is *relevance density*, not volume — which is why
-  [many-shot prompting](https://claude.com/blog/prompt-caching) is a legitimate
+  [many-shot prompting](https://arxiv.org/abs/2404.11018) is a legitimate
   technique and "trim everything" is not.
 - **Aggressive compression loses information.** Compression that drops a file
   path causes re-fetching, and worse, wrong answers from an agent reasoning
@@ -306,10 +309,10 @@ anywhere else: "minimalism improves accuracy" is true in the measured cases, and
 it is exactly the kind of claim that gets repeated as a slogan after the
 measurement is forgotten.
 
-> **Money is the argument that gets a budget approved. Time is the argument that
-> gets a developer to adopt it. Accuracy is the argument that should actually
-> persuade you. Energy is the argument that makes it worth doing.** All four move
-> for the same reason: they are all metered per token.
+> **Accuracy is the argument that should actually persuade you. Money is the
+> argument that gets a budget approved. Time is the argument that gets a
+> developer to adopt it. Energy is the argument that makes it worth doing.** All
+> four move for the same reason: they are all metered per token.
 
 [↑ Contents](#contents)
 
