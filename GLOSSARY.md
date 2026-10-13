@@ -14,7 +14,7 @@ The requirement that every technique entry state what
 capability is *preserved* alongside the cost removed ("keep all 91 tools, route
 them on demand: 134k → 8.7k tokens"). The list's answer to the reflex that
 minimalism is anti-capability; an entry that cannot be written this way belongs
-in [Anti-patterns](README.md#anti-patterns) instead.
+in [Anti-patterns](ANTI-PATTERNS.md) instead.
 → [The additive clause](CONTRIBUTING.md#the-additive-clause)
 
 ### Attention budget
@@ -231,6 +231,18 @@ by token-level filtering (LLMLingua, up to 20×), summarization, or paraphrase.
 ⚠️ Compression **rewrites the prefix**, so it and caching are antagonistic —
 see [Break-even](README.md#%F0%9F%A7%AE-break-even) for the threshold.
 → [Leg 1 · Compress](README.md#%E2%9C%82%EF%B8%8F-compress)
+
+### Prompt tax
+
+The fixed token cost of a technique that has to **describe itself** before it
+pays off — the instructions that teach a model a data format, the skill body that
+teaches a compression rule, the exemplars that demonstrate brevity. Unlike a
+[break-even](README.md#%F0%9F%A7%AE-break-even) it does not shrink with the
+payload: it is a constant that only amortizes over a large one. This is why a
+format can win 42.6% on a 500-row table and lose on a three-line answer, and why
+caveman adds ~1–1.5k input tokens per turn and is net-negative on already-terse
+work. Check the payload size before you check the ratio.
+→ [Leg 1 · Serialize](README.md#%F0%9F%93%A6-serialize)
 
 ### Reasoning token
 
