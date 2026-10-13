@@ -28,8 +28,8 @@ Part of [Awesome Token Minimalism](README.md).
 
 ## The scoreboard
 
-The worst measured numbers in this catalog, in one place. Every figure is
-graded and linked below.
+The worst measured numbers in this catalog, in one place — including the one
+ledger no dollar figure proxies for. Every figure is graded and linked below.
 
 | Case | The number | Source |
 |---|---|---|
@@ -39,6 +39,7 @@ graded and linked below.
 | Screenshot vs ARIA snapshot | **15,704 vs 121 tokens (129.8×)** | [caveman](https://github.com/JuliusBrussee/caveman) |
 | Thinking tokens on GPQA (Gemini 3 Flash) | **208M tokens** | [dev.to](https://dev.to/max_quimby/the-hidden-cost-of-cheap-ai-why-budget-reasoning-models-actually-cost-6x-more-3e0) |
 | 14 background agents | **~1.1M tokens, zero usable output** | [claude-code #25714](https://github.com/anthropics/claude-code/issues/25714) |
+| A frontier inference query | **0.31 Wh median, ~13× for reasoning** | [Joule](https://www.cell.com/joule/fulltext/S2542-4351%2826%2900114-5) |
 
 ---
 
@@ -366,7 +367,9 @@ An analysis that only says "less is more" repeats the error it criticizes:
 
 - **Many-shot prompting** — more curated examples genuinely raise accuracy,
   because they raise relevance density, not volume
-  ([prompt caching](https://claude.com/blog/prompt-caching)).
+  ([Agarwal et al., NeurIPS 2024](https://arxiv.org/abs/2404.11018)). The honest
+  caveat that paper carries: inference cost rises linearly with the number of
+  examples, so this is a *priced* capability, not a free one.
 - **Reasoning that earns its tokens** — worth it when $qC > k\,p\,r$; the bug is
   *uniform* reasoning, not reasoning.
 - **Speculative decoding** — faster and cheaper and reduces **zero tokens**; a
