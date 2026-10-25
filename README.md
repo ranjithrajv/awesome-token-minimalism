@@ -5,6 +5,7 @@
 [![License: CC0-1.0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)](LICENSE)
 [![Docs tokens](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ranjithrajv/awesome-token-minimalism/main/.github/badges/tokens.json)](.github/scripts/count_tokens.py)
 
+> **Token Maxxing ❌ Outcome Maxxing ✅**
 > **Minimal in, minimal out, minimal forever.**
 > Papers, tools, and patterns for spending fewer tokens on all three sides of an LLM call.
 
