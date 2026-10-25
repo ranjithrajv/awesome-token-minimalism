@@ -69,7 +69,7 @@ def run_task(task: dict, arm: str, model: str = DEFAULT_MODEL) -> TaskResult:
             )
             wall_clock = time.monotonic() - start
             break
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - provider errors vary; classified below
             if "rate_limit" in str(e).lower() and attempt < max_retries - 1:
                 delay = base_delay * (2 ** attempt)
                 time.sleep(delay)

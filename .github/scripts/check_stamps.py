@@ -41,7 +41,7 @@ from datetime import date
 # would fail. The same two lines appear in every script in this directory.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from entryspec import DATE_RE, graded_entries  # noqa: E402  (needs sys.path)
+from entryspec import DATE_RE, graded_entries  # needs the sys.path line above
 
 # Flip to True once entry coverage is high enough that a stale date should
 # block a PR rather than annotate one.

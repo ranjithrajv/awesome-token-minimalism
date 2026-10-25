@@ -254,12 +254,18 @@ def format_table(profile: Profile) -> str:
         f"source: {profile.source}",
         "",
         f"  prompt tokens, final turn   {last.prompt_tokens:>9,}",
-        f"  of which fixed overhead     {last.fixed_overhead:>9,}  "
-        f"({last.fixed_overhead / total:>5.1%})  system segments, billed every turn",
-        f"  of which tool schemas       {last.tool_tokens:>9,}  "
-        f"({last.tool_share:>5.1%})",
-        f"  cache reads                 {last.cache_read:>9,}  "
-        f"({last.cache_share:>5.1%})",
+        (
+            f"  of which fixed overhead     {last.fixed_overhead:>9,}  "
+            f"({last.fixed_overhead / total:>5.1%})  system segments, billed every turn"
+        ),
+        (
+            f"  of which tool schemas       {last.tool_tokens:>9,}  "
+            f"({last.tool_share:>5.1%})"
+        ),
+        (
+            f"  cache reads                 {last.cache_read:>9,}  "
+            f"({last.cache_share:>5.1%})"
+        ),
         f"  tool calls                  {last.tool_calls:>9,}",
         "",
         "  Segments, final turn:",
@@ -282,9 +288,11 @@ def format_table(profile: Profile) -> str:
         lines += [f"    - {w}" for w in profile.warnings]
     lines += [
         "",
-        f"  stamp: {profile.provenance()['model']} · "
-        f"{profile.provenance()['harness']} · {profile.provenance()['date']} · "
-        f"n={len(profile.turns)}",
+        (
+            f"  stamp: {profile.provenance()['model']} · "
+            f"{profile.provenance()['harness']} · {profile.provenance()['date']} · "
+            f"n={len(profile.turns)}"
+        ),
     ]
     return "\n".join(lines)
 

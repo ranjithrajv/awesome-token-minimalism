@@ -36,7 +36,7 @@ def test_fenced_code_is_not_an_entry():
 def test_bare_year_is_not_a_stamp():
     """A bare year cannot go stale, so it must not count as a date stamp."""
     lines = ["- **[paper](https://example.com)** — ICML 2023. `[measured]`"]
-    (n, _line, grades, dates) = check_stamps.entry_stamps(lines)[0]
+    (_n, _line, grades, dates) = check_stamps.entry_stamps(lines)[0]
     assert grades == ["[measured]"]
     assert dates == []
 

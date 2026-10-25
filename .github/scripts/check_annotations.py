@@ -31,7 +31,7 @@ import urllib.parse
 # below would fail. The same two lines appear in every script in this directory.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from entryspec import (  # noqa: E402  (needs the sys.path line above)
+from entryspec import (  # needs the sys.path line above
     ENTRY_RE,
     GRADE_RE,
     GRADES,
@@ -41,7 +41,7 @@ from entryspec import (  # noqa: E402  (needs the sys.path line above)
 # URL and heading shapes are specific to this checker, so they stay here rather
 # than moving into the shared grammar.
 URL_RE = re.compile(r"\]\((https?://[^)\s]+)\)")
-HEADING_RE = re.compile(r"^#{2,4}\s+(.+)$", re.M)
+HEADING_RE = re.compile(r"^#{2,4}\s+(.+)$", re.MULTILINE)
 ANCHOR_RE = re.compile(r"\]\(#([^)]+)\)")
 # [text](other.md#anchor) — validated against the target file, not this one.
 CROSS_RE = re.compile(r"\]\((?!https?://)([^)#\s]+\.md)#([^)\s]+)\)")
