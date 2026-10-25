@@ -139,6 +139,7 @@ def run_task(task: dict, arm: str) -> TaskResult:
             token = subprocess.run(
                 ["gh", "auth", "token"],
                 capture_output=True,
+                check=False,
                 text=True,
                 timeout=10,
             )
@@ -153,6 +154,7 @@ def run_task(task: dict, arm: str) -> TaskResult:
         result = subprocess.run(
             ["copilot", "-p", prompt, "--output-format", "json"],
             capture_output=True,
+            check=False,
             text=True,
             timeout=300,
             cwd=os.getcwd(),

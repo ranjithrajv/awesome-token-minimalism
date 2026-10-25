@@ -122,7 +122,7 @@ def paired_test(
                 effect_pct=(diff[0] / baseline_mean * 100) if baseline_mean != 0 else 0.0,
             )
 
-    t_stat, p_value = stats.ttest_rel(t, b)
+    _t_stat, p_value = stats.ttest_rel(t, b)
 
     # Confidence interval for the mean difference
     se = float(np.std(diff, ddof=1) / np.sqrt(n))

@@ -31,7 +31,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from entryspec import DATE_RE, strip_fences  # noqa: E402  (needs sys.path)
+from entryspec import DATE_RE, strip_fences  # needs the sys.path line above
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 README = ROOT / "README.md"
